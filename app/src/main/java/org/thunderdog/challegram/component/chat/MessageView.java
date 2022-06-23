@@ -608,6 +608,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           icons.append(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
         }
 
+        if (msg.canBeForwarded()) {
+          ids.append(R.id.btn_messageRepeat);
+          strings.append(R.string.MessageRepeat);
+          icons.append(R.drawable.baseline_repeat_24);
+        }
+
         ids.append(R.id.btn_messageReply);
         strings.append(R.string.Reply);
         icons.append(R.drawable.baseline_reply_24);

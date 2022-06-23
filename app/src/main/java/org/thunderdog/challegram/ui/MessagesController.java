@@ -5252,6 +5252,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageRepeat: {
+        if (selectedMessage != null) {
+          TdApi.Message message = selectedMessage.getMessage();
+          tdlib.client().send(new TdApi.ForwardMessages(message.chatId, message.chatId, new long[]{message.id}, null, false, false, false), tdlib.messageHandler());
+          clearSelectedMessage();
+        }
+        return true;
+      }
       case R.id.btn_cancel: { // nothing
         return true;
       }

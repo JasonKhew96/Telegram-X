@@ -1182,4 +1182,8 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
+  <!-- Pigeongram -->
+
+  <item type="id" name="btn_messageRepeat" />
 </resources>
