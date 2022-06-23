@@ -1186,4 +1186,5 @@
   <!-- Pigeongram -->
 
   <item type="id" name="btn_messageRepeat" />
+  <item type="id" name="btn_chatId" />
 </resources>
