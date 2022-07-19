@@ -482,8 +482,9 @@ public class Settings {
     private Map<String, int[]> _modules;
 
     private int getSettings () {
-      if (_settings == null)
-        _settings = pmc.getInt(settingsKey, 0);
+      if (_settings == null) {
+        _settings = pmc.getInt(settingsKey, BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL ? FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG : 0);
+      }
       return _settings;
     }
 
@@ -6204,7 +6205,7 @@ public class Settings {
       return;
     }
     final long knownCommitDate = pmc.getLong(KEY_APP_COMMIT_DATE, 0);
-    if (BuildConfig.COMMIT_DATE <= knownCommitDate) {
+    if (AppBuildInfo.maxCommitDate() <= knownCommitDate) {
       // Track only updates with more recent commits.
       return;
     }
@@ -6221,7 +6222,11 @@ public class Settings {
   public AppBuildInfo getCurrentBuildInformation () {
     if (currentBuildInformation == null) {
       long installationId = pmc.getLong(KEY_APP_INSTALLATION_ID, 0);
-      this.currentBuildInformation = AppBuildInfo.restoreFrom(pmc, installationId, KEY_APP_INSTALLATION_PREFIX + installationId);
+      if (BuildConfig.DEBUG) {
+        this.currentBuildInformation = new AppBuildInfo(0);
+      } else {
+        this.currentBuildInformation = AppBuildInfo.restoreFrom(pmc, installationId, KEY_APP_INSTALLATION_PREFIX + installationId);
+      }
     }
     return this.currentBuildInformation;
   }

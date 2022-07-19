@@ -119,12 +119,14 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -161,6 +163,7 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.LocalVar;
+import me.vkryl.td.Td;
 import okio.BufferedSink;
 import okio.BufferedSource;
 import okio.Okio;
@@ -2424,7 +2427,12 @@ public class U {
   }
 
   public static CharSequence getUsefulMetadata (Tdlib tdlib) {
-    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\nAndroid " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
+    AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
+    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
+      (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
+      "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
+      "Android: " + SdkVersion.getPrettyName() + "(" + Build.VERSION.SDK_INT + ")" + "\n" +
+      "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")";
   }
 
   public static String resolveMimeType (String path) {
@@ -2583,7 +2591,7 @@ public class U {
       }
     } catch (IllegalArgumentException ignored) {
       // Assume this is a corrupt video file
-    } catch (RuntimeException ignored) {
+    } catch (RuntimeException | FileNotFoundException ignored) {
       // Assume this is a corrupt video file.
     }
     U.closeRetriever(retriever);
@@ -2701,13 +2709,17 @@ public class U {
     }
   }
 
-  public static MediaMetadataRetriever openRetriever (String path) throws RuntimeException {
+  public static MediaMetadataRetriever openRetriever (String path) throws RuntimeException, FileNotFoundException {
     MediaMetadataRetriever retriever = null;
     try {
       retriever = new MediaMetadataRetriever();
       if (path.startsWith("content://")) {
         retriever.setDataSource(UI.getContext(), Uri.parse(path));
       } else {
+        File file = new File(path);
+        if (!file.exists()) {
+          throw new FileNotFoundException();
+        }
         retriever.setDataSource(path);
       }
     } catch (Throwable t) {

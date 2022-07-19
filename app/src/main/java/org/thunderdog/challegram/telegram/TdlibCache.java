@@ -76,7 +76,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
 
   public interface MyUserDataChangeListener {
     void onMyUserUpdated (TdApi.User myUser);
-    void onMyUserBioUpdated (String newBio);
+    default void onMyUserBioUpdated (@Nullable TdApi.FormattedText newBio) { }
   }
 
   public interface BasicGroupDataChangeListener {
@@ -411,7 +411,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   // Update
 
   @UiThread
-  public void onUpdateMyUserAbout (final String newAbout) {
+  public void onUpdateMyUserAbout (final TdApi.FormattedText newAbout) {
     if (myUserId != 0) {
       notifyMyUserBioListeners(myUserListeners.iterator(), newAbout);
     }
@@ -968,7 +968,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         avatarLetters = userLetters(user);
         avatarColorId = userAvatarColorId(user);
       }
-      extraDrawableRes = tdlib.isSelfUserId(user.id) ? R.drawable.ic_add_a_photo_black_56 :
+      extraDrawableRes = tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :
         tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :
         TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
           R.drawable.baseline_person_56;
@@ -1568,7 +1568,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
   }
 
-  private static void notifyMyUserBioListeners (@Nullable Iterator<MyUserDataChangeListener> list, String newBio) {
+  private static void notifyMyUserBioListeners (@Nullable Iterator<MyUserDataChangeListener> list, @Nullable TdApi.FormattedText newBio) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onMyUserBioUpdated(newBio);
