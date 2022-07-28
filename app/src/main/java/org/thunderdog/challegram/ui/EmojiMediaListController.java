@@ -1046,7 +1046,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   private static int getMaxCount (boolean areFavorite) {
-    return areFavorite ? 5 : 40;
+    return areFavorite ? 5 : 20;
   }
 
   private void processStickersImpl (final TdApi.Object object, final boolean areFavorite) {
