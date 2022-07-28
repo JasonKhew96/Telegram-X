@@ -981,7 +981,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected int getPagerItemCount () {
-    return 2;
+    return tdlib.chatFilters().length + 1;
   }
 
   private ChatsController newChatsController (int section, boolean needArchive) {
@@ -1073,19 +1073,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, final int position) {
     ViewController<?> c;
-    switch (position) {
-      case POSITION_CHATS: {
+    if (position != 0) {
+      if (tdlib.chatFilters() == null || tdlib.chatFilters().length <= 0) {
         c = newChatsController(this.menuSection, this.menuNeedArchive);
-        break;
+      } else {
+        ChatsController chats = new ChatsController(this.context, tdlib);
+        chats.setArguments(new ChatsController.Arguments(new TdApi.ChatListFilter(tdlib.chatFilters()[position - 1].id)).setIsBase(true));
+        c = chats;
       }
-      case POSITION_CALLS:
-        c = new CallListController(this.context, tdlib);
-        break;
-      case POSITION_PEOPLE:
-        c = new PeopleController(this.context, tdlib);
-        break;
-      default:
-        throw new IllegalArgumentException("position == " + position);
+    } else {
+      c = newChatsController(this.menuSection, this.menuNeedArchive);
     }
     modifyNewPagerItemController(c, position);
     return c;
@@ -1093,7 +1090,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected String[] getPagerSections () {
-    return new String[] {Lang.getString(getMenuSectionName()).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
+    String[] pagerSections = new String[tdlib.chatFilters().length + 1];
+    pagerSections[0] = Lang.getString(getMenuSectionName()).toUpperCase();
+    for (int i = 0; i < tdlib.chatFilters().length; i++) {
+      pagerSections[i+1] = tdlib.chatFilters()[i].title.toUpperCase();
+    }
+    return pagerSections;
   }
 
   // Menu
