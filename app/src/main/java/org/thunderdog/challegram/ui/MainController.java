@@ -676,20 +676,21 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (!inSearchMode()) {
       composeWrap.show();
     }
-    switch (position) {
-      case POSITION_CHATS: {
-        composeWrap.replaceMainButton(R.id.btn_float_compose, R.drawable.baseline_create_24);
-        break;
-      }
-      case POSITION_CALLS: {
-        composeWrap.replaceMainButton(R.id.btn_float_call, R.drawable.baseline_phone_24);
-        break;
-      }
-      case POSITION_PEOPLE: {
-        composeWrap.replaceMainButton(R.id.btn_float_addContact, R.drawable.baseline_person_add_24);
-        break;
-      }
-    }
+    composeWrap.replaceMainButton(R.id.btn_float_compose, R.drawable.baseline_create_24);
+    // switch (position) {
+    //   case POSITION_CHATS: {
+    //     composeWrap.replaceMainButton(R.id.btn_float_compose, R.drawable.baseline_create_24);
+    //     break;
+    //   }
+    //   case POSITION_CALLS: {
+    //     composeWrap.replaceMainButton(R.id.btn_float_call, R.drawable.baseline_phone_24);
+    //     break;
+    //   }
+    //   case POSITION_PEOPLE: {
+    //     composeWrap.replaceMainButton(R.id.btn_float_addContact, R.drawable.baseline_person_add_24);
+    //     break;
+    //   }
+    // }
   }
 
   @Override
@@ -1073,14 +1074,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   @Override
   protected ViewController<?> onCreatePagerItemForPosition (Context context, final int position) {
     ViewController<?> c;
-    if (position != 0) {
-      if (tdlib.chatFilters() == null || tdlib.chatFilters().length <= 0) {
-        c = newChatsController(this.menuSection, this.menuNeedArchive);
-      } else {
-        ChatsController chats = new ChatsController(this.context, tdlib);
-        chats.setArguments(new ChatsController.Arguments(new TdApi.ChatListFilter(tdlib.chatFilters()[position - 1].id)).setIsBase(true));
-        c = chats;
-      }
+    if (position != 0 && tdlib.chatFilters() != null && tdlib.chatFilters().length > 0) {
+      ChatsController chats = new ChatsController(this.context, tdlib);
+      chats.setArguments(new ChatsController.Arguments(new TdApi.ChatListFilter(tdlib.chatFilters()[position - 1].id)).setIsBase(true));
+      c = chats;
     } else {
       c = newChatsController(this.menuSection, this.menuNeedArchive);
     }
