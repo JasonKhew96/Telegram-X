@@ -138,6 +138,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
+import org.thunderdog.challegram.data.TGMessageText;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
@@ -5254,8 +5255,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageRepeat: {
         if (selectedMessage != null) {
-          TdApi.Message message = selectedMessage.getMessage();
-          tdlib.client().send(new TdApi.ForwardMessages(message.chatId, message.chatId, new long[]{message.id}, null, false, false, false), tdlib.messageHandler());
+          TdApi.Message msg = selectedMessage.getMessage();
+          if (selectedMessage.canBeSaved()) {
+            tdlib.client().send(new TdApi.ForwardMessages(msg.chatId, msg.chatId, new long[]{msg.id}, null, false, false, false), tdlib.messageHandler());
+          } else if (selectedMessage instanceof TGMessageText) {
+            TdApi.MessageText content = (TdApi.MessageText) msg.content;
+            tdlib.client().send(new TdApi.SendMessage(msg.chatId, 0, 0, null, null, new TdApi.InputMessageText(content.text, content.webPage == null, true)), tdlib.messageHandler());
+          } else if (selectedMessage instanceof TGMessageSticker) {
+            TdApi.MessageSticker content = (TdApi.MessageSticker) msg.content;
+	    TdApi.Sticker sticker = content.sticker;
+	    TdApi.InputFile inputSticker = (TdApi.InputFile) new TdApi.InputFileLocal(sticker.sticker.local.path);
+	    TdApi.InputThumbnail inputThumbnail = new TdApi.InputThumbnail((TdApi.InputFile) new TdApi.InputFileLocal(sticker.thumbnail.file.local.path), sticker.thumbnail.width, sticker.thumbnail.height);
+            tdlib.client().send(new TdApi.SendMessage(msg.chatId, 0, 0, null, null, new TdApi.InputMessageSticker(inputSticker, inputThumbnail, sticker.width, sticker.height, sticker.emoji)), tdlib.messageHandler());
+          }
           clearSelectedMessage();
         }
         return true;
