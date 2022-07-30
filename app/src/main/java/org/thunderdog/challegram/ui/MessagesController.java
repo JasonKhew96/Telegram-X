@@ -5263,9 +5263,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
             tdlib.client().send(new TdApi.SendMessage(msg.chatId, 0, 0, null, null, new TdApi.InputMessageText(content.text, content.webPage == null, true)), tdlib.messageHandler());
           } else if (selectedMessage instanceof TGMessageSticker) {
             TdApi.MessageSticker content = (TdApi.MessageSticker) msg.content;
-	    TdApi.Sticker sticker = content.sticker;
-	    TdApi.InputFile inputSticker = (TdApi.InputFile) new TdApi.InputFileLocal(sticker.sticker.local.path);
-	    TdApi.InputThumbnail inputThumbnail = new TdApi.InputThumbnail((TdApi.InputFile) new TdApi.InputFileLocal(sticker.thumbnail.file.local.path), sticker.thumbnail.width, sticker.thumbnail.height);
+	          TdApi.Sticker sticker = content.sticker;
+	          TdApi.InputFile inputSticker = (TdApi.InputFile) new TdApi.InputFileLocal(sticker.sticker.local.path);
+	          TdApi.InputThumbnail inputThumbnail = new TdApi.InputThumbnail((TdApi.InputFile) new TdApi.InputFileLocal(sticker.thumbnail.file.local.path), sticker.thumbnail.width, sticker.thumbnail.height);
             tdlib.client().send(new TdApi.SendMessage(msg.chatId, 0, 0, null, null, new TdApi.InputMessageSticker(inputSticker, inputThumbnail, sticker.width, sticker.height, sticker.emoji)), tdlib.messageHandler());
           }
           clearSelectedMessage();
