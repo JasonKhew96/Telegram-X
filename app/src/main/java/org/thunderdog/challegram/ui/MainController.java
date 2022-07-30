@@ -982,7 +982,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected int getPagerItemCount () {
-    return tdlib.chatFilters().length + 1;
+    return (tdlib.chatFilters() != null ? tdlib.chatFilters().length : 0) + 1;
   }
 
   private ChatsController newChatsController (int section, boolean needArchive) {
@@ -1087,9 +1087,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected String[] getPagerSections () {
-    String[] pagerSections = new String[tdlib.chatFilters().length + 1];
+    int len = tdlib.chatFilters() != null ? tdlib.chatFilters().length : 0;
+    String[] pagerSections = new String[len + 1];
     pagerSections[0] = Lang.getString(getMenuSectionName()).toUpperCase();
-    for (int i = 0; i < tdlib.chatFilters().length; i++) {
+    for (int i = 0; i < len; i++) {
       pagerSections[i+1] = tdlib.chatFilters()[i].title.toUpperCase();
     }
     return pagerSections;
