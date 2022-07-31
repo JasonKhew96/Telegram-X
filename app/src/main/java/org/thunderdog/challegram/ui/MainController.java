@@ -1087,10 +1087,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected String[] getPagerSections () {
-    int len = tdlib.chatFilters() != null ? tdlib.chatFilters().length : 0;
-    String[] pagerSections = new String[len + 1];
+    int len = getPagerItemCount();
+    String[] pagerSections = new String[len];
     pagerSections[0] = Lang.getString(getMenuSectionName()).toUpperCase();
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len - 1; i++) {
       pagerSections[i+1] = tdlib.chatFilters()[i].title.toUpperCase();
     }
     return pagerSections;
