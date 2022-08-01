@@ -1191,4 +1191,5 @@
 
   <item type="id" name="btn_messageRepeat" />
   <item type="id" name="btn_chatId" />
+  <item type="id" name="btn_copyImage" />
 </resources>

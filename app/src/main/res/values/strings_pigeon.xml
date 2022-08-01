@@ -2,4 +2,6 @@
 <resources>
     <string name="MessageRepeat">Repeat</string>
     <string name="ChatId">Chat ID</string>
+    <string name="CopyImage">Copy image</string>
+    <string name="ImageHasBeenCopied">Image has been copied</string>
 </resources>

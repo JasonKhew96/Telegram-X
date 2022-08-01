@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.mediaview;
 
 import android.annotation.TargetApi;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,6 +26,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.Editable;
@@ -56,6 +59,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.FileProvider;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -159,13 +164,13 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -1501,6 +1506,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (item.isLoaded() && item.canBeSaved()) {
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
+          ids.append(R.id.btn_copyImage);
+          strings.append(R.string.CopyImage);
         }
 
         if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeSaved() && item.canBeShared()) {
@@ -1571,6 +1578,19 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         TdApi.File file = item.getTargetFile();
         if (TD.isFileLoadedAndExists(file)) {
           U.copyToGallery(file.local.path, item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+        }
+        break;
+      }
+      case R.id.btn_copyImage: {
+        TdApi.File file = item.getTargetFile();
+        if (TD.isFileLoadedAndExists(file)) {
+          ClipboardManager clipboard = (ClipboardManager) UI.getAppContext().getSystemService(Context.CLIPBOARD_SERVICE);
+          if (clipboard != null) {
+            Uri uri = FileProvider.getUriForFile(UI.getAppContext(), Config.FILE_PROVIDER_AUTHORITY, new File(file.local.path));
+            ClipData clip = ClipData.newUri(UI.getAppContext().getContentResolver(), "image", uri);
+            clipboard.setPrimaryClip(clip);
+            UI.showToast(R.string.ImageHasBeenCopied, Toast.LENGTH_SHORT);
+          }
         }
         break;
       }
