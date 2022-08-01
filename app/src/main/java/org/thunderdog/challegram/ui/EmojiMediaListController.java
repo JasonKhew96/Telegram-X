@@ -27,6 +27,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.jasonkhew96.pigeongramx.PigeonSettings;
+
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -1044,7 +1046,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   private int getMaxCount (boolean areFavorite) {
-    return areFavorite ? tdlib.favoriteStickersMaxCount() : 20;
+    return areFavorite ? tdlib.favoriteStickersMaxCount() : PigeonSettings.instance().getRecentStickersCount();
   }
 
   private void processStickersImpl (final TdApi.Object object, final boolean areFavorite) {

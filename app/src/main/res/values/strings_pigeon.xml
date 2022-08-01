@@ -4,4 +4,9 @@
     <string name="ChatId">Chat ID</string>
     <string name="CopyImage">Copy image</string>
     <string name="ImageHasBeenCopied">Image has been copied</string>
+    <string name="PigeonSettings">Pigeon Settings</string>
+    <string name="RecentStickersCount">Recent Stickers Count</string>
+    <string name="DisableCameraButton">Disable Camera Button</string>
+    <string name="DisableRecordButton">Disable Record Button</string>
+    <string name="Kofi">Ko-fi</string>
 </resources>

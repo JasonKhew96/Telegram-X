@@ -28,6 +28,8 @@ import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.jasonkhew96.pigeongramx.ui.SettingsPigeonController;
+
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
@@ -645,6 +647,10 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_pigeonSettings, R.drawable.baseline_settings_24, R.string.PigeonSettings));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_help, R.drawable.baseline_live_help_24, R.string.AskAQuestion));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_faq, R.drawable.baseline_help_24, R.string.TelegramFAQ));
@@ -966,6 +972,10 @@ public class SettingsController extends ViewController<Void> implements
       }
       case R.id.btn_languageSettings: {
         navigateTo(new SettingsLanguageController(context, tdlib));
+        break;
+      }
+      case R.id.btn_pigeonSettings: {
+        navigateTo(new SettingsPigeonController(context, tdlib));
         break;
       }
       case R.id.btn_notificationSettings: {
