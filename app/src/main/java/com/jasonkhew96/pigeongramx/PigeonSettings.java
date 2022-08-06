@@ -9,11 +9,13 @@ import androidx.annotation.Nullable;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.leveldb.LevelDB;
 
 public class PigeonSettings {
@@ -21,9 +23,9 @@ public class PigeonSettings {
   private static final int VERSION = VERSION_1;
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static final String KEY_VERSION = "version";
-  private static final String KEY_RECENT_STICKERS_COUNT = "recent_stickers_count";
-  private static final String KEY_DISABLE_CAMERA_BUTTON = "disable_camera_button";
-  private static final String KEY_DISABLE_RECORD_BUTTON = "disable_record_button";
+  public static final String KEY_RECENT_STICKERS_COUNT = "recent_stickers_count";
+  public static final String KEY_DISABLE_CAMERA_BUTTON = "disable_camera_button";
+  public static final String KEY_DISABLE_RECORD_BUTTON = "disable_record_button";
   private static volatile PigeonSettings instance;
   private final LevelDB config;
 
@@ -150,11 +152,38 @@ public class PigeonSettings {
     // DO NOTHING
   }
 
+  public interface SettingsChangeListener {
+    void onSettingsChanged (String key, Object newSettings, Object oldSettings);
+  }
+
+  private ReferenceList<SettingsChangeListener> newSettingsListeners;
+
+  public void addNewSettingsListener (SettingsChangeListener listener) {
+    if (newSettingsListeners == null)
+      newSettingsListeners = new ReferenceList<>();
+    newSettingsListeners.add(listener);
+  }
+
+  public void removeNewSettingsListener (SettingsChangeListener listener) {
+    if (newSettingsListeners != null) {
+      newSettingsListeners.remove(listener);
+    }
+  }
+  
+  private void notifyNewSettingsListeners (String key, Object newSettings, Object oldSettings) {
+    if (newSettingsListeners != null) {
+      for (SettingsChangeListener listener : newSettingsListeners) {
+        listener.onSettingsChanged(key, newSettings, oldSettings);
+      }
+    }
+  }
+  
   public int getRecentStickersCount () {
     return getInt(KEY_RECENT_STICKERS_COUNT, 20);
   }
 
   public void setRecentStickersCount (int count) {
+    notifyNewSettingsListeners(KEY_RECENT_STICKERS_COUNT, count, getRecentStickersCount());
     putInt(KEY_RECENT_STICKERS_COUNT, count);
   }
 
@@ -163,6 +192,7 @@ public class PigeonSettings {
   }
 
   public void toggleDisableCameraButton () {
+    notifyNewSettingsListeners(KEY_DISABLE_CAMERA_BUTTON, !isDisableCameraButton(), isDisableCameraButton());
     putBoolean(KEY_DISABLE_CAMERA_BUTTON, !isDisableCameraButton());
   }
 
@@ -171,6 +201,7 @@ public class PigeonSettings {
   }
 
   public void toggleDisableRecordButton () {
+    notifyNewSettingsListeners(KEY_DISABLE_RECORD_BUTTON, !isDisableRecordButton(), isDisableRecordButton());
     putBoolean(KEY_DISABLE_RECORD_BUTTON, !isDisableRecordButton());
   }
 }

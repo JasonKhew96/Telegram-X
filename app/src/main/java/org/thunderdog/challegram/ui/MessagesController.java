@@ -282,7 +282,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, PigeonSettings.SettingsChangeListener {
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -504,6 +504,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         headerCell.setForcedSubtitle(Lang.getStringBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.FoundMessagesFromUser : R.string.FoundMessagesFromChat, tdlib.senderName(previewSearchSender, true)));
       }
+    }
+  }
+
+  @Override
+  public void onSettingsChanged (String key, Object newSettings, Object oldSettings) {
+    switch (key) {
+      case PigeonSettings.KEY_DISABLE_CAMERA_BUTTON:
+        if (cameraButton == null) {
+          return;
+        }
+        boolean disableCameraButton = (boolean) newSettings;
+        if (disableCameraButton) {
+          attachButtons.removeView(cameraButton);
+        } else {
+          attachButtons.addView(cameraButton);
+        }
+        break;
+      case PigeonSettings.KEY_DISABLE_RECORD_BUTTON:
+        if (recordButton == null) {
+          return;
+        }
+        boolean disableRecordButton = (boolean) newSettings;
+        if (disableRecordButton) {
+          attachButtons.removeView(recordButton);
+        } else {
+          attachButtons.addView(recordButton);
+        }
+        break;
     }
   }
 
@@ -1240,6 +1268,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     updateView();
 
+    PigeonSettings.instance().addNewSettingsListener(this);
     TGLegacyManager.instance().addEmojiListener(this);
 
     if (needTabs()) {

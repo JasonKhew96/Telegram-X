@@ -81,7 +81,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   MediaGifsAdapter.Callback,
   TGStickerSetInfo.ViewCallback,
   ClickHelper.Delegate,
-  ForceTouchView.ActionListener {
+  ForceTouchView.ActionListener,
+  PigeonSettings.SettingsChangeListener {
   public EmojiMediaListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -104,6 +105,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private CustomRecyclerView stickersView;
   private RecyclerView gifsView;
   private RecyclerView hotView;
+
+  @Override
+  public void onSettingsChanged (String key, Object newSettings, Object oldSettings) {
+    if (key.equals(PigeonSettings.KEY_RECENT_STICKERS_COUNT)) {
+      reloadStickers();
+    }
+  }
 
   @Override
   protected View onCreateView (Context context) {
@@ -150,6 +158,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     loadStickers(); // to show sections
     loadTrending(0, 20, 0); // to show blue badge?
 
+    PigeonSettings.instance().addNewSettingsListener(this);
+    
     return contentView;
   }
 
