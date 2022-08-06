@@ -29,9 +29,11 @@ import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.viewpager.widget.PagerAdapter;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.ChatFilterListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -40,8 +42,8 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -49,7 +51,7 @@ import java.lang.annotation.RetentionPolicy;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public abstract class ViewPagerController<T> extends TelegramViewController<T> implements ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
-  OptionDelegate, SelectDelegate, Menu, MoreDelegate {
+  OptionDelegate, SelectDelegate, Menu, MoreDelegate, ChatFilterListener {
   public ViewPagerController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -69,6 +71,19 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   protected int getMenuButtonsWidth () {
     return 0; // override for performance
+  }
+
+  @Override public void onUpdateChatFilter (TdApi.ChatFilterInfo[] updatedChatFilters) {
+    tdlib.ui().post(() -> {
+      updateHeader();
+      int startPosition = getCurrentPagerItemPosition() > updatedChatFilters.length - 1 ? getCurrentPagerItemPosition() : 0;
+      if (adapter != null) {
+        adapter.destroyCachedItems();
+      }
+      adapter = new ViewPagerAdapter(context, this);
+      pager.setAdapter(adapter);
+      pager.setCurrentItem(startPosition);
+    });
   }
 
   @Override

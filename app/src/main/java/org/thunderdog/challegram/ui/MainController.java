@@ -68,6 +68,7 @@ import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.telegram.ChatFilter;
+import org.thunderdog.challegram.telegram.ChatFilterListener;
 import org.thunderdog.challegram.telegram.CounterChangeListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -229,6 +230,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
       });
     }
+
+    tdlib.listeners().subscribeToChatFiltersUpdates(this);
 
     // tdlib.awaitConnection(this::unlockTabs);
 
@@ -766,6 +769,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     tdlib.listeners().removeOptionListener(this);
     context().appUpdater().removeListener(this);
     tdlib.listeners().removeTotalChatCounterListener(this);
+    tdlib.listeners().unsubscribeFromChatFiltersUpdates(this);
   }
 
   private void showSuggestions () {

@@ -39,6 +39,7 @@ public class TdlibListeners {
 
   final ReferenceList<MessageListener> messageListeners;
   final ReferenceList<MessageEditListener> messageEditListeners;
+  final ReferenceList<ChatFilterListener> chatFilterListeners;
   final ReferenceList<ChatListener> chatListeners;
   final ReferenceMap<String, ChatListListener> chatListListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
@@ -72,6 +73,7 @@ public class TdlibListeners {
 
     this.messageListeners = new ReferenceList<>();
     this.messageEditListeners = new ReferenceList<>();
+    this.chatFilterListeners = new ReferenceList<>();
     this.chatListeners = new ReferenceList<>();
     this.chatListListeners = new ReferenceMap<>(true);
     this.settingsListeners = new ReferenceList<>(true);
@@ -126,6 +128,9 @@ public class TdlibListeners {
       if (any instanceof MessageEditListener) {
         messageEditListeners.add((MessageEditListener) any);
       }
+      if (any instanceof ChatFilterListener) {
+        chatFilterListeners.add((ChatFilterListener) any);
+      }
       if (any instanceof ChatListener) {
         chatListeners.add((ChatListener) any);
       }
@@ -176,6 +181,9 @@ public class TdlibListeners {
       }
       if (any instanceof MessageEditListener) {
         messageEditListeners.remove((MessageEditListener) any);
+      }
+      if (any instanceof ChatFilterListener) {
+        chatFilterListeners.remove((ChatFilterListener) any);
       }
       if (any instanceof ChatListener) {
         chatListeners.remove((ChatListener) any);
@@ -364,6 +372,16 @@ public class TdlibListeners {
     totalCountersListeners.remove(listener);
   }
 
+  @AnyThread
+  public void subscribeToChatFiltersUpdates (ChatFilterListener listener) {
+    chatFilterListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromChatFiltersUpdates (ChatFilterListener listener) {
+    chatFilterListeners.remove(listener);
+  }
+  
   @AnyThread
   public void subscribeToChatUpdates (long chatId, ChatListener listener) {
     specificChatListeners.add(chatId, listener);
@@ -1088,8 +1106,16 @@ public class TdlibListeners {
 
   // updateChatFilters
 
+  private static void updateChatFilters (TdApi.UpdateChatFilters update, @Nullable Iterator<ChatFilterListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onUpdateChatFilter(update.chatFilters);
+      }
+    }
+  }
+
   void updateChatFilters (TdApi.UpdateChatFilters update) {
-    // TODO?
+    updateChatFilters(update, chatFilterListeners.iterator());
   }
 
   // updateChatAvailableReactions
