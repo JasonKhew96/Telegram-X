@@ -27,6 +27,8 @@ import android.view.ViewParent;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.jasonkhew96.pigeongramx.PigeonSettings;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
@@ -619,7 +621,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.baseline_reply_24);
       }
 
-      if (Config.COMMENTS_SUPPORTED) {
+      if (PigeonSettings.instance().isCommentsEnabled()) {
         if (msg.getReplyCount() > 0) {
           ids.append(R.id.btn_messageReplies);
           strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
@@ -1022,7 +1024,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       icons.append(R.drawable.baseline_reply_24);
     }
 
-    if (Config.COMMENTS_SUPPORTED && msg.getReplyCount() > 0) {
+    if (PigeonSettings.instance().isCommentsEnabled() && msg.getReplyCount() > 0) {
       ids.append(R.id.btn_messageReplies);
       strings.append(Lang.plural(R.string.ViewXReplies, msg.getReplyCount()));
       icons.append(R.drawable.baseline_reply_all_24);

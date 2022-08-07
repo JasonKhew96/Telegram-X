@@ -8,5 +8,6 @@
     <string name="RecentStickersCount">Recent Stickers Count</string>
     <string name="DisableCameraButton">Disable Camera Button</string>
     <string name="DisableRecordButton">Disable Record Button</string>
+    <string name="EnableComments">Enable Comments</string>
     <string name="Kofi">Ko-fi</string>
 </resources>

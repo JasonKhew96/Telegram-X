@@ -45,6 +45,10 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
         PigeonSettings.instance().toggleDisableRecordButton();
         adapter.updateValuedSettingById(R.id.btn_disableRecordButton);
         break;
+      case R.id.btn_enableComments:
+        PigeonSettings.instance().toggleEnableComments();
+        adapter.updateValuedSettingById(R.id.btn_enableComments);
+        break;
       case R.id.btn_kofi: {
         tdlib.ui().openUrl(this, "https://ko-fi.com/jasonkhew96", new TdlibUi.UrlOpenParameters().forceInstantView());
         break;
@@ -96,6 +100,9 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
           case R.id.btn_disableRecordButton:
             view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableRecordButton(), isUpdate);
             break;
+          case R.id.btn_enableComments:
+            view.getToggler().setRadioEnabled(PigeonSettings.instance().isCommentsEnabled(), isUpdate);
+            break;
         }
       }
     };
@@ -107,6 +114,8 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_disableCameraButton, 0, R.string.DisableCameraButton));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_disableRecordButton, 0, R.string.DisableRecordButton));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_enableComments, 0, R.string.EnableComments));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

@@ -26,6 +26,7 @@ public class PigeonSettings {
   public static final String KEY_RECENT_STICKERS_COUNT = "recent_stickers_count";
   public static final String KEY_DISABLE_CAMERA_BUTTON = "disable_camera_button";
   public static final String KEY_DISABLE_RECORD_BUTTON = "disable_record_button";
+  public static final String KEY_ENABLE_COMMENTS = "enable_comments";
   private static volatile PigeonSettings instance;
   private final LevelDB config;
 
@@ -203,5 +204,14 @@ public class PigeonSettings {
   public void toggleDisableRecordButton () {
     notifyNewSettingsListeners(KEY_DISABLE_RECORD_BUTTON, !isDisableRecordButton(), isDisableRecordButton());
     putBoolean(KEY_DISABLE_RECORD_BUTTON, !isDisableRecordButton());
+  }
+
+  public boolean isCommentsEnabled () {
+    return getBoolean(KEY_ENABLE_COMMENTS, false);
+  }
+
+  public void toggleEnableComments () {
+    notifyNewSettingsListeners(KEY_ENABLE_COMMENTS, !isCommentsEnabled(), isCommentsEnabled());
+    putBoolean(KEY_ENABLE_COMMENTS, !isCommentsEnabled());
   }
 }

@@ -17,6 +17,8 @@ package org.thunderdog.challegram.config;
 import android.os.Build;
 import android.view.WindowManager;
 
+import com.jasonkhew96.pigeongramx.PigeonSettings;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;
@@ -28,7 +30,7 @@ import org.thunderdog.challegram.tool.UI;
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
 
-  public static final boolean COMMENTS_SUPPORTED = true;
+  public static final boolean COMMENTS_SUPPORTED = false;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
