@@ -95,6 +95,7 @@ function build_one {
   --enable-protocol=file \
   \
   --enable-decoder=h264 \
+  --enable-decoder=hevc \
   --enable-decoder=mpeg4 \
   --enable-decoder=gif \
   --enable-decoder=alac \
