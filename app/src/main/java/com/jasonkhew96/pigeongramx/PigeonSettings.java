@@ -211,7 +211,6 @@ public class PigeonSettings {
   }
 
   public void toggleEnableComments () {
-    notifyNewSettingsListeners(KEY_ENABLE_COMMENTS, !isCommentsEnabled(), isCommentsEnabled());
     putBoolean(KEY_ENABLE_COMMENTS, !isCommentsEnabled());
   }
 }
