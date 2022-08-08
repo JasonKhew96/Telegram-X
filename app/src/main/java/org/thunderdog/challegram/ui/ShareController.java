@@ -49,6 +49,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.jasonkhew96.pigeongramx.PigeonSettings;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -2869,13 +2871,22 @@ public class ShareController extends TelegramViewController<ShareController.Args
       needHideAuthor = result.get(R.id.btn_hideAuthor) == R.id.btn_hideAuthor;
       needRemoveCaptions = result.get(R.id.btn_removeCaptions) == R.id.btn_removeCaptions;
       forceSendWithoutSound = result.get(R.id.btn_sendNoSound) == R.id.btn_sendNoSound;
+
+      if (isRememberSendOptions) {
+        PigeonSettings.instance().putSendAsCopy(needHideAuthor);
+        PigeonSettings.instance().putSendRemoveCaptions(needRemoveCaptions);
+        PigeonSettings.instance().putSendWithoutSound(forceSendWithoutSound);
+      }
     });
   }
 
   // Send messages
+  private boolean isRememberSendOptions = PigeonSettings.instance().isRememberSendOptions();
 
   private boolean isSent;
-  private boolean needHideAuthor, needRemoveCaptions, forceSendWithoutSound;
+  private boolean needHideAuthor = isRememberSendOptions ? PigeonSettings.instance().isSendAsCopy() : false;
+  private boolean needRemoveCaptions = isRememberSendOptions ? PigeonSettings.instance().isSendRemoveCaptions() : false;
+  private boolean forceSendWithoutSound = isRememberSendOptions ? PigeonSettings.instance().isSendWithoutSound() : false;
 
   private void sendMessages (boolean forceGoToChat, boolean isSingleTap, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
     if (selectedChats.size() == 0 || isSent) {

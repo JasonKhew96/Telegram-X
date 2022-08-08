@@ -1198,6 +1198,7 @@
   <item type="id" name="btn_disableCameraButton" />
   <item type="id" name="btn_disableRecordButton" />
   <item type="id" name="btn_enableComments" />
+  <item type="id" name="btn_rememberSendOptions" />
   <item type="id" name="btn_recentStickers20" />
   <item type="id" name="btn_recentStickers40" />
   <item type="id" name="btn_recentStickers60" />

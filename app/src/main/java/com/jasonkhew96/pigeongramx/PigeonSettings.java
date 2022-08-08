@@ -27,6 +27,10 @@ public class PigeonSettings {
   public static final String KEY_DISABLE_CAMERA_BUTTON = "disable_camera_button";
   public static final String KEY_DISABLE_RECORD_BUTTON = "disable_record_button";
   public static final String KEY_ENABLE_COMMENTS = "enable_comments";
+  public static final String KEY_REMEMBER_SEND_OPTIONS = "remember_send_options";
+  public static final String KEY_SEND_AS_COPY = "send_as_copy";
+  public static final String KEY_SEND_REMOVE_CAPTIONS = "send_remove_captions";
+  public static final String KEY_SEND_WITHOUT_SOUND = "send_without_sound";
   private static volatile PigeonSettings instance;
   private final LevelDB config;
 
@@ -212,5 +216,37 @@ public class PigeonSettings {
 
   public void toggleEnableComments () {
     putBoolean(KEY_ENABLE_COMMENTS, !isCommentsEnabled());
+  }
+
+  public boolean isRememberSendOptions () {
+    return getBoolean(KEY_REMEMBER_SEND_OPTIONS, false);
+  }
+
+  public void toggleRememberSendOptions () {
+    putBoolean(KEY_REMEMBER_SEND_OPTIONS, !isRememberSendOptions());
+  }
+
+  public boolean isSendAsCopy () {
+    return getBoolean(KEY_SEND_AS_COPY, false);
+  }
+
+  public void putSendAsCopy (boolean enable) {
+    putBoolean(KEY_SEND_AS_COPY, enable);
+  }
+
+  public boolean isSendRemoveCaptions () {
+    return getBoolean(KEY_SEND_REMOVE_CAPTIONS, false);
+  }
+
+  public void putSendRemoveCaptions (boolean enable) {
+    putBoolean(KEY_SEND_REMOVE_CAPTIONS, enable);
+  }
+
+  public boolean isSendWithoutSound () {
+    return getBoolean(KEY_SEND_WITHOUT_SOUND, false);
+  }
+
+  public void putSendWithoutSound (boolean enable) {
+    putBoolean(KEY_SEND_WITHOUT_SOUND, enable);
   }
 }
