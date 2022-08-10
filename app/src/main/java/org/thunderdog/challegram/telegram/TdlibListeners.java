@@ -794,7 +794,7 @@ public class TdlibListeners {
     }
   }
 
-  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update) {
+  void updateMessageUnreadReactions (TdApi.UpdateMessageUnreadReactions update, boolean counterChanged, boolean availabilityChanged) {
     List<TdApi.Message> messages = pendingMessages.get(update.chatId + "_" + update.messageId);
     if (messages != null) {
       for (TdApi.Message message : messages) {
@@ -803,6 +803,10 @@ public class TdlibListeners {
     }
     updateMessageUnreadReactions(update, messageListeners.iterator());
     updateMessageUnreadReactions(update, messageChatListeners.iterator(update.chatId));
+    if (counterChanged) {
+      updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
+      updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+    }
   }
 
   // updateDeleteMessages
@@ -845,9 +849,16 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update, boolean availabilityChanged) {
+  void updateChatUnreadReactionCount (TdApi.UpdateChatUnreadReactionCount update, boolean availabilityChanged, TdApi.Chat chat, TdlibChatList[] chatLists) {
     updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, chatListeners.iterator());
     updateChatUnreadReactionCount(update.chatId, update.unreadReactionCount, availabilityChanged, specificChatListeners.iterator(update.chatId));
+    if (chatLists != null) {
+      for (TdlibChatList chatList : chatLists) {
+        iterateChatListListeners(chatList, listener ->
+          listener.onChatListItemChanged(chatList, chat, availabilityChanged ? ChatListListener.ItemChangeType.UNREAD_AVAILABILITY_CHANGED : ChatListListener.ItemChangeType.READ_INBOX)
+        );
+      }
+    }
   }
 
   // updateChatLastMessage
