@@ -50,9 +50,9 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
         adapter.updateValuedSettingById(R.id.btn_enableComments);
         break;
       case R.id.btn_rememberSendOptions:
-	PigeonSettings.instance().toggleRememberSendOptions();
-	adapter.updateValuedSettingById(R.id.btn_rememberSendOptions);
-	break;
+        PigeonSettings.instance().toggleRememberSendOptions();
+        adapter.updateValuedSettingById(R.id.btn_rememberSendOptions);
+        break;
       case R.id.btn_disableStickerTimestamp:
         PigeonSettings.instance().toggleDisableStickerTimestamp();
         adapter.updateValuedSettingById(R.id.btn_disableStickerTimestamp);
@@ -111,9 +111,9 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
           case R.id.btn_enableComments:
             view.getToggler().setRadioEnabled(PigeonSettings.instance().isCommentsEnabled(), isUpdate);
             break;
-	  case R.id.btn_rememberSendOptions:
-	    view.getToggler().setRadioEnabled(PigeonSettings.instance().isRememberSendOptions(), isUpdate);
-	    break;
+          case R.id.btn_rememberSendOptions:
+            view.getToggler().setRadioEnabled(PigeonSettings.instance().isRememberSendOptions(), isUpdate);
+            break;
           case R.id.btn_disableStickerTimestamp:
             view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableStickerTimestamp(), isUpdate);
             break;
