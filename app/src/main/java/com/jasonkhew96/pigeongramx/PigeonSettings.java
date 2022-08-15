@@ -31,6 +31,7 @@ public class PigeonSettings {
   public static final String KEY_SEND_AS_COPY = "send_as_copy";
   public static final String KEY_SEND_REMOVE_CAPTIONS = "send_remove_captions";
   public static final String KEY_SEND_WITHOUT_SOUND = "send_without_sound";
+  public static final String KEY_DISABLE_STICKER_TIMESTAMP = "disable_sticker_timestamp";
   private static volatile PigeonSettings instance;
   private final LevelDB config;
 
@@ -248,5 +249,13 @@ public class PigeonSettings {
 
   public void putSendWithoutSound (boolean enable) {
     putBoolean(KEY_SEND_WITHOUT_SOUND, enable);
+  }
+
+  public boolean isDisableStickerTimestamp () {
+    return getBoolean(KEY_DISABLE_STICKER_TIMESTAMP, false);
+  }
+
+  public void toggleDisableStickerTimestamp () {
+    putBoolean(KEY_DISABLE_STICKER_TIMESTAMP, !isDisableStickerTimestamp());
   }
 }

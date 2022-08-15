@@ -53,6 +53,10 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
 	PigeonSettings.instance().toggleRememberSendOptions();
 	adapter.updateValuedSettingById(R.id.btn_rememberSendOptions);
 	break;
+      case R.id.btn_disableStickerTimestamp:
+        PigeonSettings.instance().toggleDisableStickerTimestamp();
+        adapter.updateValuedSettingById(R.id.btn_disableStickerTimestamp);
+        break;
       case R.id.btn_kofi: {
         tdlib.ui().openUrl(this, "https://ko-fi.com/jasonkhew96", new TdlibUi.UrlOpenParameters().forceInstantView());
         break;
@@ -110,6 +114,9 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
 	  case R.id.btn_rememberSendOptions:
 	    view.getToggler().setRadioEnabled(PigeonSettings.instance().isRememberSendOptions(), isUpdate);
 	    break;
+          case R.id.btn_disableStickerTimestamp:
+            view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableStickerTimestamp(), isUpdate);
+            break;
         }
       }
     };
@@ -125,6 +132,8 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_enableComments, 0, R.string.EnableComments));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_rememberSendOptions, 0, R.string.RememberSendOptions));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_disableStickerTimestamp, 0, R.string.DisableStickerTimestamp));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

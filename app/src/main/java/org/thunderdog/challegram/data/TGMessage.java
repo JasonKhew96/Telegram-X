@@ -3315,6 +3315,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     final boolean isSending = isSending();
     final boolean isFailed = isFailed();
 
+    final boolean isMsgSticker = msg.content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR;
+    final boolean isDisableStickerTimestamp = PigeonSettings.instance().isDisableStickerTimestamp();
+
     boolean reverseOrder;
 
     if ((reverseOrder = Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT && moveBubbleTimePartToLeft())) {
@@ -3324,7 +3327,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
     int startY = bottomContentEdge - getBubbleTimePartHeight() - getBubbleTimePartOffsetY() - getBubbleReduceHeight();
 
-    if (backgroundColor != 0) {
+    if (backgroundColor != 0 && !(isMsgSticker && isDisableStickerTimestamp)) {
       startY -= Screen.dp(4f);
       RectF rectF = Paints.getRectF();
       int padding = Screen.dp(6f);
@@ -3374,7 +3377,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       startX += Icons.getEditedIconWidth() + Screen.dp(2f);
     }
 
-    if (time != null) {
+    if (time != null && !(isMsgSticker && isDisableStickerTimestamp)) {
       c.drawText(time, startX, startY + Screen.dp(15.5f), Paints.colorPaint(mTimeBubble(), textColor));
       startX += pTimeWidth;
     }

@@ -10,5 +10,6 @@
     <string name="DisableRecordButton">Disable Record Button</string>
     <string name="EnableComments">Enable Comments</string>
     <string name="RememberSendOptions">Remember Send Options</string>
+    <string name="DisableStickerTimestamp">Disable Sticker Timestamp</string>
     <string name="Kofi">Ko-fi</string>
 </resources>
