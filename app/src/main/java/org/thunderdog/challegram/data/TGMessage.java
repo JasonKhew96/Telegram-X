@@ -3398,7 +3398,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         // TODO failure icon
       } else if (isSending) {
         Drawables.draw(c, Icons.getClockIcon(iconColorId), startX - Screen.dp(Icons.CLOCK_SHIFT_X), top - Screen.dp(Icons.CLOCK_SHIFT_Y), iconPaint);
-      } else {
+      } else if (!(isMsgSticker && isDisableStickerTimestamp)) {
         boolean unread = isUnread() && !noUnread();
         Drawables.draw(c, unread ? Icons.getSingleTick(iconColorId) : Icons.getDoubleTick(iconColorId), startX - Screen.dp(Icons.TICKS_SHIFT_X), top - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? ticksPaint : ticksReadPaint);
       }
