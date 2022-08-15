@@ -1507,8 +1507,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (item.isLoaded() && item.canBeSaved()) {
           ids.append(R.id.btn_saveToGallery);
           strings.append(R.string.SaveToGallery);
-          ids.append(R.id.btn_copyImage);
-          strings.append(R.string.CopyImage);
+          if (item.isPhoto()) {
+            ids.append(R.id.btn_copyImage);
+            strings.append(R.string.CopyImage);
+          }
         }
 
         if (mode != MODE_SECRET && mode != MODE_GALLERY && item.canBeSaved() && item.canBeShared()) {
