@@ -151,6 +151,10 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     contentView.setWillNotDraw(false);
 
     String[] sections = getPagerSections();
+    if (sections != null && sections.length != getPagerItemCount()) {
+      throw new IllegalArgumentException("sections.length != " + getPagerItemCount());
+    }
+
     if (sections != null) {
       switch (getTitleStyle()) {
         case TITLE_STYLE_BIG: {
