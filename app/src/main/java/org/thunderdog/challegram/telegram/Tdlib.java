@@ -73,6 +73,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -4796,35 +4797,35 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     int state = context().getTokenState();
     final String deviceToken = getRegisteredDeviceToken();
-    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TOKEN_STATE_NONE || state == TdlibManager.TOKEN_STATE_INITIALIZING)) {
-      state = TdlibManager.TOKEN_STATE_OK;
+    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+      state = TdlibManager.TokenState.OK;
     }
-    if (state == TdlibManager.TOKEN_STATE_NONE)
+    if (state == TdlibManager.TokenState.NONE)
       return;
     String error = context().getTokenError();
-    List<TdApi.JsonObjectMember> members = new ArrayList<>();
+    Map<String, Object> members = new LinkedHashMap<>();
     switch (state) {
-      case TdlibManager.TOKEN_STATE_ERROR: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_ERROR")));
+      case TdlibManager.TokenState.ERROR: {
+        members.put(DEVICE_TOKEN_KEY, "FIREBASE_ERROR");
         if (!StringUtils.isEmpty(error)) {
-          members.add(new TdApi.JsonObjectMember("firebase_error", new TdApi.JsonValueString(error)));
+          members.put("firebase_error", error);
         }
         break;
       }
-      case TdlibManager.TOKEN_STATE_INITIALIZING: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("FIREBASE_INITIALIZING")));
+      case TdlibManager.TokenState.INITIALIZING: {
+        members.put(DEVICE_TOKEN_KEY, "FIREBASE_INITIALIZING");
         break;
       }
-      case TdlibManager.TOKEN_STATE_OK: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString(deviceToken)));
+      case TdlibManager.TokenState.OK: {
+        members.put(DEVICE_TOKEN_KEY, deviceToken);
         break;
       }
       default: {
-        members.add(new TdApi.JsonObjectMember(DEVICE_TOKEN_KEY, new TdApi.JsonValueString("UNKNOWN")));
+        members.put(DEVICE_TOKEN_KEY, "UNKNOWN");
         break;
       }
     }
-    String connectionParams = JSON.stringify(members);
+    String connectionParams = JSON.stringify(JSON.toObject(members));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
       client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler);
@@ -6327,6 +6328,39 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       for (TdlibChatList chatList : chatLists) {
         chatList.onUpdateNewChat(update.chat);
       }
+    }
+  }
+
+  public void refreshChatState (long chatId) {
+    client().send(new TdApi.GetChat(chatId), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.Chat.CONSTRUCTOR: {
+          updateChatState((TdApi.Chat) result);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          Log.v("Unable to refresh chat state: %s", TD.toErrorString(result));
+          break;
+        }
+      }
+    });
+  }
+
+  @TdlibThread
+  private void updateChatState (TdApi.Chat chat) {
+    boolean notificationSettingsChanged;
+    synchronized (dataLock) {
+      TdApi.Chat existingChat = chats.get(chat.id);
+      if (TdlibUtils.assertChat(chat.id, chat)) {
+        return;
+      }
+      existingChat.canBeDeletedForAllUsers = chat.canBeDeletedForAllUsers;
+      existingChat.canBeDeletedOnlyForSelf = chat.canBeDeletedOnlyForSelf;
+      existingChat.canBeReported = chat.canBeReported;
+      notificationSettingsChanged = !existingChat.notificationSettings.useDefaultMuteFor && !chat.notificationSettings.useDefaultMuteFor && existingChat.notificationSettings.muteFor != chat.notificationSettings.muteFor;
+    }
+    if (notificationSettingsChanged) {
+      listeners.updateNotificationSettings(new TdApi.UpdateChatNotificationSettings(chat.id, chat.notificationSettings));
     }
   }
 
@@ -7963,7 +7997,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       case TdApi.UpdateBasicGroupFullInfo.CONSTRUCTOR: {
-        cache.onUpdateBasicGroupFull((TdApi.UpdateBasicGroupFullInfo) update);
+        TdApi.UpdateBasicGroupFullInfo updateBasicGroupFullInfo = (TdApi.UpdateBasicGroupFullInfo) update;
+        cache.onUpdateBasicGroupFull(updateBasicGroupFullInfo);
+        refreshChatState(ChatId.fromBasicGroupId(updateBasicGroupFullInfo.basicGroupId));
         break;
       }
 
@@ -7973,7 +8009,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
       case TdApi.UpdateSupergroupFullInfo.CONSTRUCTOR: {
-        cache.onUpdateSupergroupFull((TdApi.UpdateSupergroupFullInfo) update);
+        TdApi.UpdateSupergroupFullInfo updateSupergroupFullInfo = (TdApi.UpdateSupergroupFullInfo) update;
+        cache.onUpdateSupergroupFull(updateSupergroupFullInfo);
+        refreshChatState(ChatId.fromSupergroupId(updateSupergroupFullInfo.supergroupId));
         break;
       }
 

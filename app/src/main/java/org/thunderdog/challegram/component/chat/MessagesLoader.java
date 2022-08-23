@@ -1155,36 +1155,13 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
+        case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR: {
+          // Only full message
           m = newMessage(chatId, isChannel, event);
-          m.content = new TdApiExt.MessageChatEvent(event, true, false); // new TdApi.MessageChatAddMembers(new int[] {event.userId});
+          m.content = new TdApiExt.MessageChatEvent(event, true, false);
           break;
         }
-        /*case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-          m = newMessage(chatId, isChannel, event);
-          m.content = new TdApi.MessageChatAddMembers(new int[] {event.userId});
-          break;
-        case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-          m = newMessage(chatId, isChannel, event);
-          m.content = new TdApi.MessageChatDeleteMember(event.userId);
-          break;
-
-        case TdApi.ChatEventTitleChanged.CONSTRUCTOR: {
-          TdApi.ChatEventTitleChanged e = (TdApi.ChatEventTitleChanged) event.action;
-          m = newMessage(chatId, isChannel, event);
-          m.content = new TdApi.MessageChatChangeTitle(e.newTitle);
-          break;
-        }
-        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
-          TdApi.ChatEventPhotoChanged e = (TdApi.ChatEventPhotoChanged) event.action;
-          m = newMessage(chatId, isChannel, event);
-          if (e.newPhoto != null) {
-            m.content = new TdApi.MessageChatChangePhoto(TD.convertToPhoto(e.newPhoto));
-          } else {
-            m.content = new TdApi.MessageChatDeletePhoto();
-          }
-          break;
-        }*/
 
         case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
         case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
@@ -1192,6 +1169,8 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
         case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
         case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
+          // Service + full message
+
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, true);
           out.add(m);
@@ -1217,6 +1196,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
         case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
+          // Only service message
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, false, false);
           break;

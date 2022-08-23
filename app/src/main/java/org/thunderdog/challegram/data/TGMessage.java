@@ -118,6 +118,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -6982,10 +6983,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
       if (content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
         TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
+        // Try to convert chat event to some existing native message type
         switch (event.event.action.getConstructor()) {
           case TdApi.ChatEventMemberJoined.CONSTRUCTOR: {
             final long userId = Td.getSenderUserId(event.event.memberId);
-            content = new TdApi.MessageChatAddMembers(new long[]{userId});
+            content = new TdApi.MessageChatAddMembers(new long[] {userId});
             break;
           }
           case TdApi.ChatEventMemberLeft.CONSTRUCTOR: {
@@ -7016,19 +7018,49 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
             }
             break;
           }
+          case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
+          case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
+          case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
+          case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
+          case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
+          case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+          case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
+          case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
+          case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
+          case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
+          case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
+          case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+          case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
+          case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
+          case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
+          case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
+          case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
+          case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
+          case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+          case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
+          case TdApi.ChatEventPollStopped.CONSTRUCTOR:
+          case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+          case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
+          case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+          case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
+          case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+          case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+          case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+            // No native message interpretation.
+            break;
         }
       }
 
       int unsupportedStringRes = R.string.UnsupportedMessage;
 
       switch (content.getConstructor()) {
-        case TdApiExt.MessageChatEvent.CONSTRUCTOR:
+        case TdApiExt.MessageChatEvent.CONSTRUCTOR: {
           TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
           if (event.isFull) {
+            TGMessage fullMessage = null;
             switch (event.event.action.getConstructor()) {
               case TdApi.ChatEventUsernameChanged.CONSTRUCTOR: {
                 TdApi.ChatEventUsernameChanged e = (TdApi.ChatEventUsernameChanged) event.event.action;
-
                 TdApi.FormattedText text;
                 if (StringUtils.isEmpty(e.newUsername)) {
                   text = new TdApi.FormattedText("", null);
@@ -7036,15 +7068,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   String link = TD.getLink(e.newUsername);
                   text = new TdApi.FormattedText(link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
                 }
-
-                TGMessageText parsedMessage = new TGMessageText(context, msg, text);
-
+                fullMessage = new TGMessageText(context, msg, text);
                 if (!StringUtils.isEmpty(e.oldUsername)) {
                   String link = TD.getLink(e.oldUsername);
-                  parsedMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[]{new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
+                  fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
                 }
-
-                return parsedMessage;
+                break;
               }
 
               case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR: {
@@ -7057,13 +7086,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   text = new TdApi.FormattedText(e.newDescription, Text.findEntities(e.newDescription, Text.ENTITY_FLAGS_ALL_NO_COMMANDS));
                 }
 
-                TGMessageText parsedMessage = new TGMessageText(context, msg, text);
-
+                fullMessage = new TGMessageText(context, msg, text);
                 if (!StringUtils.isEmpty(e.oldDescription)) {
-                  parsedMessage.setFooter(Lang.getString(R.string.EventLogPreviousGroupDescription), e.oldDescription, null);
+                  fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousGroupDescription), e.oldDescription, null);
                 }
-
-                return parsedMessage;
+                break;
               }
 
               case TdApi.ChatEventMemberInvited.CONSTRUCTOR: {
@@ -7081,30 +7108,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   b.append('@');
                   b.append(user.username);
                 }
-
                 TdApi.TextEntity[] array = new TdApi.TextEntity[entities.size()];
                 entities.toArray(array);
                 TdApi.FormattedText text = new TdApi.FormattedText(b.toString(), array);
-
-                return new TGMessageText(context, msg, text);
+                fullMessage = new TGMessageText(context, msg, text);
+                break;
               }
 
               case TdApi.ChatEventMessageDeleted.CONSTRUCTOR: {
                 TdApi.ChatEventMessageDeleted e = (TdApi.ChatEventMessageDeleted) event.event.action;
-
-                TGMessage m = valueOf(context, e.message);
-                m.setIsEventLog(event, 0);
-
-                return m;
+                fullMessage = valueOf(context, e.message);
+                break;
               }
 
               case TdApi.ChatEventMessageEdited.CONSTRUCTOR: {
                 TdApi.ChatEventMessageEdited e = (TdApi.ChatEventMessageEdited) event.event.action;
-
-
-                TGMessage m = valueOf(context, TD.removeWebPage(e.newMessage));
-                m.setIsEventLog(event, e.newMessage.id);
-
+                fullMessage = valueOf(context, TD.removeWebPage(e.newMessage));
                 int footerRes;
                 TdApi.Message oldMessage = TD.removeWebPage(e.oldMessage);
                 TdApi.FormattedText originalText = Td.textOrCaption(oldMessage.content);
@@ -7117,25 +7136,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                     break;
                 }
                 String text = Td.isEmpty(originalText) ? Lang.getString(R.string.EventLogOriginalCaptionEmpty) : originalText.text;
-                m.setFooter(Lang.getString(footerRes), text, originalText != null ? originalText.entities : null);
-
-                return m;
+                fullMessage.setFooter(Lang.getString(footerRes), text, originalText != null ? originalText.entities : null);
+                break;
               }
               case TdApi.ChatEventMessagePinned.CONSTRUCTOR: {
                 TdApi.ChatEventMessagePinned e = (TdApi.ChatEventMessagePinned) event.event.action;
-
-                TGMessage m = valueOf(context, e.message);
-                m.setIsEventLog(event, e.message.id);
-
-                return m;
+                fullMessage = valueOf(context, e.message);
+                break;
               }
               case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
                 TdApi.ChatEventPollStopped e = (TdApi.ChatEventPollStopped) event.event.action;
-
-                TGMessage m = valueOf(context, e.message);
-                m.setIsEventLog(event, e.message.id);
-
-                return m;
+                fullMessage = valueOf(context, e.message);
+                break;
               }
               case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR: {
                 TdApi.ChatEventInviteLinkEdited e = (TdApi.ChatEventInviteLinkEdited) event.event.action;
@@ -7175,10 +7187,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 }
 
                 TdApi.FormattedText formattedText = new TdApi.FormattedText(text, Td.findEntities(text));
-                TGMessageText m = new TGMessageText(context, msg, formattedText);
-                m.setIsEventLog(event, 0);
-
-                return m;
+                fullMessage = new TGMessageText(context, msg, formattedText);
+                break;
               }
               case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR: {
                 StringBuilder b = new StringBuilder(Lang.getString(R.string.EventLogPermissions));
@@ -7197,11 +7207,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                 appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
                 appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
 
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[]{new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
-                TGMessageText m = new TGMessageText(context, msg, formattedText);
-                m.setIsEventLog(event, 0);
-
-                return m;
+                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
+                fullMessage = new TGMessageText(context, msg, formattedText);
+                break;
               }
               case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
               case TdApi.ChatEventMemberRestricted.CONSTRUCTOR: {
@@ -7445,16 +7453,94 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
                   formattedText.entities = new TdApi.TextEntity[entities.size()];
                   entities.toArray(formattedText.entities);
                 }
-
-                TGMessageText m = new TGMessageText(context, msg, formattedText);
-                m.setIsEventLog(event, 0);
-
-                return m;
+                fullMessage = new TGMessageText(context, msg, formattedText);
+                break;
               }
+              case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
+                TdApi.ChatEventAvailableReactionsChanged e = (TdApi.ChatEventAvailableReactionsChanged) event.event.action;
+
+                final List<String> addedReactions = new ArrayList<>();
+                final List<String> removedReactions = new ArrayList<>();
+
+                for (String newAvailableReaction : e.newAvailableReactions) {
+                  if (ArrayUtils.indexOf(e.oldAvailableReactions, newAvailableReaction) == -1) {
+                    addedReactions.add(newAvailableReaction);
+                  }
+                }
+
+                for (String oldAvailableReaction : e.oldAvailableReactions) {
+                  if (ArrayUtils.indexOf(e.newAvailableReactions, oldAvailableReaction) == -1) {
+                    removedReactions.add(oldAvailableReaction);
+                  }
+                }
+
+                List<TdApi.TextEntity> entities = new ArrayList<>();
+                StringBuilder text = new StringBuilder();
+
+                if (e.oldAvailableReactions.length == 0) {
+                  // Enabled reactions
+                  text.append(Lang.getString(R.string.EventLogReactionsEnabled));
+                } else if (e.newAvailableReactions.length == 0) {
+                  // Disabled reactions
+                  text.append(Lang.getString(R.string.EventLogReactionsDisabled));
+                } else {
+                  // Changed available reactions
+                  text.append(Lang.getString(R.string.EventLogReactionsChanged));
+                }
+                entities.add(new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeItalic()));
+                if (e.newAvailableReactions.length > 0) {
+                  text.append("\n").append(TextUtils.join(" ", e.newAvailableReactions));
+                }
+
+                if (!addedReactions.isEmpty() && e.oldAvailableReactions.length > 0) {
+                  // + Added:
+                  text.append("\n\n");
+                  text.append(Lang.getString(R.string.EventLogReactionsAdded, TextUtils.join(" ", addedReactions)));
+                }
+
+                if (!removedReactions.isEmpty()) {
+                  // – Removed:
+                  text.append("\n\n");
+                  text.append(Lang.getString(R.string.EventLogReactionsRemoved, TextUtils.join(" ", removedReactions)));
+                }
+
+                TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));
+                fullMessage = new TGMessageText(context, msg, formattedText);
+                break;
+              }
+              case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
+              case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
+              case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
+              case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
+              case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
+              case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
+              case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
+              case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
+              case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
+              case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
+              case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
+              case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+              case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
+              case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
+              case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
+              case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
+              case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
+              case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+              case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+                // Only TGMessageChat is displayed for these events
+                break;
             }
-            throw new IllegalArgumentException("unsupported: " + event.event.action);
+            if (fullMessage == null) {
+              throw new IllegalArgumentException("unsupported: " + event.event.action);
+            }
+            return fullMessage.setIsEventLog(event, 0);
           }
           return new TGMessageChat(context, msg, ((TdApiExt.MessageChatEvent) msg.content).event).setIsEventLog((TdApiExt.MessageChatEvent) msg.content, 0);
+        }
 
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
