@@ -106,7 +106,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.TdConstants;
 
-public class MainController extends ViewPagerController<Void> implements Menu, MoreDelegate, OverlayButtonWrap.Callback, TdlibOptionListener, AppUpdater.Listener, CounterChangeListener {
+public class MainController extends ViewPagerController<Void> implements Menu, MoreDelegate, OverlayButtonWrap.Callback, TdlibOptionListener, AppUpdater.Listener, CounterChangeListener, ChatFilterListener {
   public MainController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -118,6 +118,19 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private FrameLayoutFix mainWrap;
   private OverlayButtonWrap composeWrap;
+
+  @Override public void onUpdateChatFilter (TdApi.ChatFilterInfo[] updatedChatFilters) {
+    tdlib.ui().post(() -> {
+      updateHeader();
+      int startPosition = getCurrentPagerItemPosition() > updatedChatFilters.length - 1 ? getCurrentPagerItemPosition() : 0;
+      if (adapter != null) {
+        adapter.destroyCachedItems();
+      }
+      adapter = new ViewPagerAdapter(context, this);
+      pager.setAdapter(adapter);
+      pager.setCurrentItem(startPosition);
+    });
+  }
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
@@ -233,7 +246,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     tdlib.listeners().subscribeToChatFiltersUpdates(this);
 
-    // tdlib.awaitConnection(this::unlockTabs);
+    tdlib.awaitConnection(this::unlockTabs);
 
     context().appUpdater().addListener(this);
     if (context().appUpdater().state() == AppUpdater.State.READY_TO_INSTALL) {
