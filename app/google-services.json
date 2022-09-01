@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "405579464842",
+    "project_id": "pigeongram-fdc5d",
+    "storage_bucket": "pigeongram-fdc5d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405579464842:android:7f8e59c38845265f6bed73",
+        "android_client_info": {
+          "package_name": "com.jasonkhew96.pigeongram"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAFZAzIHGWs8pd2dmtkRDyYcpecAuV5wU"
+        },
+        {
+          "current_key": "AIzaSyB1qT3f83zmXRYJOOCSfV1fzOTWp8HTLK4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405579464842:android:862d62887a972eaf6bed73",
+        "android_client_info": {
+          "package_name": "com.jasonkhew96.pigeongramx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "405579464842-61bs5oc6i0b7r8ep1ceng2e9dbbviavr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jasonkhew96.pigeongramx",
+            "certificate_hash": "8dc194dc4a46508f2fae9632ec1184c1f4207e51"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAFZAzIHGWs8pd2dmtkRDyYcpecAuV5wU"
+        },
+        {
+          "current_key": "AIzaSyB1qT3f83zmXRYJOOCSfV1fzOTWp8HTLK4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
