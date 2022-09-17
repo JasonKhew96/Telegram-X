@@ -30,7 +30,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.Editable;
-import android.text.InputFilter;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -45,6 +44,7 @@ import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
 import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -74,11 +74,9 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageText;
 import org.thunderdog.challegram.data.TGWebPage;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -143,7 +141,6 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.CheckView;
 import org.thunderdog.challegram.widget.CustomTextView;
-import org.thunderdog.challegram.widget.EditText;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -161,9 +158,8 @@ import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.android.util.ClickHelper;
-import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -1236,7 +1232,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void setCaption (String text, TextEntity[] entities) {
     if (captionView instanceof TextView) {
-      ((TextView) captionView).setText(Emoji.instance().replaceEmoji(text));
+      ((TextView) captionView).setText(text);
     } else if (captionView instanceof CustomTextView) {
       ((CustomTextView) captionView).setText(text, entities, false);
     }
@@ -1249,9 +1245,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         ignoreCaptionUpdate = true;
         TdApi.FormattedText caption = item.getCaption();
         if (caption != null) {
-          ((InputView) captionView).setInput(TD.toCharSequence(caption), true);
+          ((InputView) captionView).setInput(TD.toCharSequence(caption), true, false);
         } else {
-          ((InputView) captionView).setInput("", true);
+          ((InputView) captionView).setInput("", true, false);
         }
         ignoreCaptionUpdate = false;
         break;
@@ -3078,7 +3074,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (captionView != null) {
       captionView.invalidate();
     }
@@ -3993,7 +3989,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private static class ThumbView extends View implements AttachDelegate, MediaItem.ThumbExpandChangeListener, Destroyable, MultipleViewProvider.InvalidateContentProvider {
+  private static class ThumbView extends View implements AttachDelegate, MediaItem.ThumbExpandChangeListener, Destroyable, InvalidateContentProvider {
     private DoubleImageReceiver preview;
 
     private ThumbItems items;
@@ -4037,10 +4033,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     @Override
-    public void invalidateContent () {
+    public boolean invalidateContent (Object cause) {
       if (this.item != null && this.item.getPreviewImageFile() == null && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || this.item.isLoaded())) {
         this.preview.getImageReceiver().requestFile(item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
+        return true;
       }
+      return false;
     }
 
     public MediaItem getItem () {
@@ -4853,12 +4851,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           }
         };
         if (chat != null) {
-          captionView.setIsSecret(Settings.instance().needsIncognitoMode(chat));
+          captionView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
         }
         captionView.setHighlightColor(ColorUtils.alphaColor(0.2f, Theme.fillingTextSelectionColor()));
         captionView.setHighlightColor(getForcedTheme().getColor(R.id.theme_color_textSelectionHighlight));
         // addThemeHighlightColorListener(captionView, R.id.theme_color_textSelectionHighlight);
-        captionView.setFilters(new InputFilter[] {new CodePointCountFilter(tdlib.maxCaptionLength())});
+        captionView.setMaxCodePointCount(tdlib.maxCaptionLength());
         captionView.setIgnoreCustomStuff(false);
         captionView.getInlineSearchContext().setIsCaption(true);
         captionView.setInputListener(this);
@@ -5017,7 +5015,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                   }
                   videoSliderView.resetDuration(timeTotal, timeNow, true, true);
                 } else {
-                  item.invalidateContent();
+                  item.invalidateContent(item);
                 }
               }
             }
@@ -5339,6 +5337,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     tdlib.context().calls().removeCurrentCallListener(this);
     context.removeFullScreenView(this, true);
+    if (captionView instanceof Destroyable) {
+      ((Destroyable) captionView).performDestroy();
+    }
   }
 
   @Override
@@ -8038,16 +8039,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     openWithArgs(context, args);
   }
 
-  public static void openFromMessage (TGMessageChat groupPhoto) {
-    ViewController<?> context = groupPhoto.controller();
+  public static void openFromMessage (TGMessage message, MediaItem item) {
+    ViewController<?> context = message.controller();
     if (context.isStackLocked()) {
       return;
     }
 
-    MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), groupPhoto.getMessage());
-    if (item == null)
-      return;
-    item.setSourceMessage(groupPhoto);
+    item.setSourceMessage(message);
 
     MediaStack stack;
 
@@ -8057,9 +8055,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     Args args = new Args(context, MODE_CHAT_PROFILE, stack);
     args.reverseMode = true;
     if (context instanceof MediaCollectorDelegate) {
-      ((MediaCollectorDelegate) context).modifyMediaArguments(groupPhoto, args);
+      ((MediaCollectorDelegate) context).modifyMediaArguments(message, args);
     }
-    args.noLoadMore = groupPhoto.isEventLog();
+    args.noLoadMore = message.isEventLog();
 
     openWithArgs(context, args);
   }
