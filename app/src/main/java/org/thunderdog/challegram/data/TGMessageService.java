@@ -62,6 +62,58 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageGiftedPremium giftedPremium) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getPlural(
+          R.string.YouGiftedPremium,
+          giftedPremium.monthCount,
+          new BoldArgument(CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount))
+        );
+      } else {
+        return getPlural(
+          R.string.GiftedPremium,
+          giftedPremium.monthCount,
+          new SenderArgument(sender, isUserChat()),
+          new BoldArgument(CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount))
+        );
+      }
+    });
+    // TODO design for giftedPremium.sticker
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (StringUtils.isEmpty(setTheme.themeName)) {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.ChatThemeDisabled_outgoing
+          );
+        } else {
+          return getText(
+            R.string.ChatThemeDisabled,
+            new SenderArgument(sender, isUserChat())
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.ChatThemeSet_outgoing,
+            new BoldArgument(setTheme.themeName)
+          );
+        } else {
+          return getText(
+            R.string.ChatThemeSet,
+            new SenderArgument(sender, isUserChat()),
+            new BoldArgument(setTheme.themeName)
+          );
+        }
+      }
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageExpiredPhoto expiredPhoto) {
     super(context, msg);
     setTextCreator(() ->
@@ -686,6 +738,16 @@ public final class TGMessageService extends TGMessageServiceImpl {
         }
       );
     }
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageWebAppDataSent webAppDataSent) {
+    super(context, msg);
+    setTextCreator(() ->
+      getText(
+        R.string.BotDataSent,
+        new BoldArgument(webAppDataSent.buttonText)
+      )
+    );
   }
 
   // Video chats
