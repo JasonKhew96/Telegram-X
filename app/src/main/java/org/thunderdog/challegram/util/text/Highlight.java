@@ -105,14 +105,6 @@ public class Highlight {
   }
 
   public Highlight (String text, int start, int end, String highlight, int highlightStart, int highlightEnd) {
-    // It's possible to also ignore diacritics,
-    // e.g. via Normalizer.normalize(..., Normalizer.Form.NFD),
-    // however, it seems server never returns e when looking for é,
-    // at least for global messages search.
-
-    text = text.toLowerCase();
-    highlight = highlight.toLowerCase();
-
     int highlightLength = highlightEnd - highlightStart;
 
     int maxMatchingLength = 0;
@@ -126,7 +118,8 @@ public class Highlight {
       }
 
       int matchingLength = 0;
-      for (int highlightIndex = 0; highlightIndex < highlightLength && matchingLength < (end - index); ) {
+      int highlightIndex = 0;
+      while (highlightIndex < highlightLength && matchingLength < (end - index)) {
         int highlightCodePoint = highlight.codePointAt(highlightStart + highlightIndex);
         int highlightCodePointType = Character.getType(highlightCodePoint);
         boolean highlightCodePointIsSeparator =
@@ -137,11 +130,10 @@ public class Highlight {
         boolean contentCodePointIsSeparator =
           contentCodePointType == Character.SPACE_SEPARATOR ||
           contentCodePointType == Character.LINE_SEPARATOR;
-        if (highlightCodePoint == contentCodePoint || (highlightCodePointIsSeparator && contentCodePointIsSeparator)) {
+        if (highlightCodePoint == contentCodePoint || (highlightCodePointIsSeparator && contentCodePointIsSeparator) || StringUtils.normalizeCodePoint(highlightCodePoint) == StringUtils.normalizeCodePoint(contentCodePoint)) {
           // easy path: code points are equal or similar
-          int charCount = Character.charCount(highlightCodePoint);
-          matchingLength += charCount;
-          highlightIndex += charCount;
+          matchingLength += Character.charCount(contentCodePoint);
+          highlightIndex += Character.charCount(highlightCodePoint);
         } else {
           // harder path: look if text <-> highlight can be transliterated one way or another
           Transliterator.PrefixResult prefixResult = Transliterator.findPrefix(
@@ -157,7 +149,7 @@ public class Highlight {
         }
       }
       if (matchingLength > 0) {
-        parts.add(new Part(index, index + matchingLength, highlight.length() - matchingLength));
+        parts.add(new Part(index, index + matchingLength, highlightLength - highlightIndex));
         next = Math.max(next, index + matchingLength);
         maxMatchingLength = Math.max(maxMatchingLength, matchingLength);
       }
@@ -175,7 +167,7 @@ public class Highlight {
 
     for (int i = parts.size() - 1; i >= 0; i--) {
       Part part = parts.get(i);
-      if (part.length() < maxMatchingLength) {
+      if (part.length() < maxMatchingLength && !part.isExactMatch()) {
         parts.remove(i);
       }
     }
