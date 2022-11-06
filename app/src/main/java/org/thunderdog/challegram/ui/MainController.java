@@ -923,6 +923,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     showSuggestions();
     checkSyncAlert();
+    tdlib.checkDeadlocks();
   }
 
   @Override
@@ -1142,6 +1143,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public void onMenuItemPressed (int id, View view) {
     switch (id) {
       case R.id.menu_btn_search: {
+        tdlib.checkDeadlocks();
         openSearchMode();
         break;
       }
