@@ -17,8 +17,6 @@ package org.thunderdog.challegram.config;
 import android.os.Build;
 import android.view.WindowManager;
 
-import com.jasonkhew96.pigeongramx.PigeonSettings;
-
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;

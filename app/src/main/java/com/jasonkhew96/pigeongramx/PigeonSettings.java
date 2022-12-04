@@ -26,7 +26,6 @@ public class PigeonSettings {
   public static final String KEY_RECENT_STICKERS_COUNT = "recent_stickers_count";
   public static final String KEY_DISABLE_CAMERA_BUTTON = "disable_camera_button";
   public static final String KEY_DISABLE_RECORD_BUTTON = "disable_record_button";
-  public static final String KEY_ENABLE_COMMENTS = "enable_comments";
   public static final String KEY_REMEMBER_SEND_OPTIONS = "remember_send_options";
   public static final String KEY_SEND_AS_COPY = "send_as_copy";
   public static final String KEY_SEND_REMOVE_CAPTIONS = "send_remove_captions";
@@ -209,14 +208,6 @@ public class PigeonSettings {
   public void toggleDisableRecordButton () {
     notifyNewSettingsListeners(KEY_DISABLE_RECORD_BUTTON, !isDisableRecordButton(), isDisableRecordButton());
     putBoolean(KEY_DISABLE_RECORD_BUTTON, !isDisableRecordButton());
-  }
-
-  public boolean isCommentsEnabled () {
-    return getBoolean(KEY_ENABLE_COMMENTS, false);
-  }
-
-  public void toggleEnableComments () {
-    putBoolean(KEY_ENABLE_COMMENTS, !isCommentsEnabled());
   }
 
   public boolean isRememberSendOptions () {

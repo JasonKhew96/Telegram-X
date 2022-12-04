@@ -47,8 +47,6 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 
-import com.jasonkhew96.pigeongramx.PigeonSettings;
-
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
@@ -857,7 +855,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final boolean needCommentButton () {
-    if (!PigeonSettings.instance().isCommentsEnabled() || !msg.isChannelPost || isScheduled() || !allowInteraction() || isSponsored()) {
+    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction() || isSponsored()) {
       return false;
     }
     TdApi.Message msg = this.msg;
@@ -877,7 +875,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void openMessageThread (MessageId highlightMessageId) {
-    if (!PigeonSettings.instance().isCommentsEnabled()) {
+    if (!Config.COMMENTS_SUPPORTED) {
       tdlib.ui().openMessage(controller(), highlightMessageId.getChatId(), highlightMessageId, openParameters());
       return;
     }
@@ -3929,7 +3927,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final int getReplyCount () {
-    if (!PigeonSettings.instance().isCommentsEnabled() || isThreadHeader()) {
+    if (!Config.COMMENTS_SUPPORTED || isThreadHeader()) {
       return 0;
     }
     TdApi.MessageInteractionInfo info = msg.interactionInfo;
