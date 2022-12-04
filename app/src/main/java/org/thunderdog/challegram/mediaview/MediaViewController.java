@@ -1724,7 +1724,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         forceAnimationType = ANIMATION_TYPE_FADE;
 
         ViewController<?> c = context.navigation().getCurrentStackItem();
-        if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId()) {
+        if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId() && ((MessagesController) c).getMessageThreadId() == messageThreadId) {
           ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
         } else {
           tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
@@ -8122,6 +8122,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
+    args.setMessageThreadId(msg.messagesController().getMessageThreadId());
 
     openWithArgs(context, args);
   }
@@ -8182,6 +8183,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
     args.setFilter(filter);
+    args.setMessageThreadId(messageContainer.messagesController().getMessageThreadId());
 
     openWithArgs(context, args);
   }
