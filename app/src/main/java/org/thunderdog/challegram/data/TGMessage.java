@@ -48,6 +48,8 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 
+import com.jasonkhew96.pigeongramx.PigeonSettings;
+
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
