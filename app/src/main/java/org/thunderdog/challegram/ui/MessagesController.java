@@ -2798,7 +2798,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
           if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
-            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
           }
           break;
         case PREVIEW_MODE_SEARCH:
@@ -7750,7 +7750,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.Chat chat = tdlib.chat(currentSwitchPmButton.getSourceChatId());
       TdApi.User user = tdlib.cache().user(currentSwitchPmButton.getUserId());
       if (chat != null && user != null) {
-        tdlib.ui().openChat(this, chat, new TdlibUi.ChatOpenParameters().shareItem(new TGSwitchInline(user.username, button.query)));
+        tdlib.ui().openChat(this, chat, new TdlibUi.ChatOpenParameters().shareItem(new TGSwitchInline(Td.primaryUsername(user), button.query)));
       }
     }
   }
@@ -7781,7 +7781,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void openGame (long ownerUserId, TdApi.Game game, final String url, TdApi.Message message) {
     TdApi.User user = tdlib.cache().user(ownerUserId);
     GameController controller = new GameController(context, tdlib);
-    controller.setArguments(new GameController.Args(user != null ? user.id : 0, game, user != null ? "@" + user.username : "Game", url, message, this));
+    controller.setArguments(new GameController.Args(user != null ? user.id : 0, game, user != null ? "@" + Td.primaryUsername(user) : "Game", url, message, this));
     /*PopupLayout popupLayout = new PopupLayout(getContext());
     popupLayout.init(true);
     popupLayout.showSimplePopupView(controller.getWrap(), Screen.currentHeight());*/
@@ -7793,15 +7793,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     final TdApi.User user = viaBotUserId != 0 ? tdlib.cache().user(viaBotUserId) : tdlib.chatUser(chat);
-    if (user == null || StringUtils.isEmpty(user.username)) {
+    if (user == null || !Td.hasUsername(user)) {
       return;
     }
 
-    final String username = user.username;
+    final String username = Td.primaryUsername(user);
 
     if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) {
       if (inputView != null) {
-        inputView.setInput("@" + user.username + " " + switchInline.query, true, true);
+        inputView.setInput("@" + username + " " + switchInline.query, true, true);
       }
       return;
     }
@@ -8601,7 +8601,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     // TdApi.Function function = new TdApi.GetSupergroupMembers(TD.getChatSupergroupId(chat), new TdApi.ChannelMembersFilterAdministrators(), 0, 200);
 
-    tdlib.client().send(new TdApi.GetChatAdministrators(chat.id), object -> {
+    long chatId = chat.id;
+    Client.ResultHandler handler = object -> {
       switch (object.getConstructor()) {
         case TdApi.ChatAdministrators.CONSTRUCTOR: {
           tdlib.ui().post(() -> {
@@ -8618,7 +8619,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
           break;
         }
       }
-    });
+    };
+    if (tdlib.isSupergroupChat(chat) && tdlib.telegramAntiSpamUserId() != 0) {
+      tdlib.client().send(new TdApi.GetUser(tdlib.telegramAntiSpamUserId()), ignored -> {
+        tdlib.client().send(new TdApi.GetChatAdministrators(chatId), handler);
+      });
+    } else {
+      tdlib.client().send(new TdApi.GetChatAdministrators(chatId), handler);
+    }
   }
 
   private static boolean checkFilter (int filter, TdApi.ChatEventLogFilters filters) {
@@ -8747,6 +8755,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_members, 0, R.string.EventLogAllAdmins, userIds == null));
 
+        if (tdlib.isSupergroupChat(chat)) {
+          TdApi.SupergroupFullInfo fullInfo = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chat.id));
+          if (fullInfo != null && fullInfo.isAggressiveAntiSpamEnabled) {
+            long userId = tdlib.telegramAntiSpamUserId();
+            if (userId != 0) {
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+              items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(userId), userIds == null || ArrayUtils.indexOf(userIds, userId) != -1).setLongId(userId).setLongValue(userId));
+            }
+          }
+        }
+
         for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
@@ -8770,6 +8789,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
 
             final TdApi.ChatEventLogFilters filter = new TdApi.ChatEventLogFilters(
+              true,
               true,
               true,
               true,
@@ -9299,7 +9319,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void forwardMessage (TdApi.Message message) { // TODO remove all related to Forward stuff to replace with ShareLayout
     if (hasWritePermission()) {
-      tdlib.forwardMessage(chat.id, message.chatId, message.id, Td.newSendOptions(obtainSilentMode()));
+      tdlib.forwardMessage(chat.id, getMessageThreadId(), message.chatId, message.id, Td.newSendOptions(obtainSilentMode()));
     }
   }
 
@@ -9932,7 +9952,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatTitleChanged (final long chatId, final String title) {
     runOnUiThreadOptional(() -> {
       if (getHeaderChatId() == chatId) {
-        headerCell.updateChatTitle(chatId, title);
+        headerCell.setTitle(title);
       }
     });
   }
@@ -9955,15 +9975,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
             navigateBack();
           }
         }
-      }
-    });
-  }
-
-  @Override
-  public void onChatPhotoChanged (final long chatId, @Nullable final TdApi.ChatPhotoInfo photo) {
-    tdlib.ui().post(() -> {
-      if (getHeaderChatId() == chatId) {
-        headerCell.updateChatPhoto(chat, photo);
       }
     });
   }
@@ -10184,7 +10195,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
     tdlib.ui().post(() -> {
       if (getHeaderChatId() == chatId) {
-        headerCell.updateNotificationSettings(chatId, settings);
+        headerCell.setShowMute(TD.needMuteIcon(settings, tdlib.scopeNotificationSettings(chatId)));
       }
       if (getChatId() == chatId) {
         updateCounters(true);
