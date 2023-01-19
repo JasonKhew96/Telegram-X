@@ -5639,7 +5639,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.Message msg = selectedMessage.getMessage();
           long msgThreadId = getMessageThreadId();
           if (selectedMessage.canBeSaved() && msgThreadId == 0L) {
-            tdlib.client().send(new TdApi.ForwardMessages(msg.chatId, msg.chatId, new long[]{msg.id}, null, false, false, false), tdlib.messageHandler());
+            tdlib.client().send(new TdApi.ForwardMessages(msg.chatId, msg.messageThreadId, msg.chatId, new long[]{msg.id}, null, false, false, false), tdlib.messageHandler());
           } else if (selectedMessage instanceof TGMessageText) {
             TdApi.MessageText content = (TdApi.MessageText) msg.content;
             tdlib.client().send(new TdApi.SendMessage(msg.chatId, msgThreadId, 0, null, null, new TdApi.InputMessageText(content.text, content.webPage == null, true)), tdlib.messageHandler());
