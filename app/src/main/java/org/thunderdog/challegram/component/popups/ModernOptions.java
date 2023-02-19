@@ -12,8 +12,6 @@
  */
 package org.thunderdog.challegram.component.popups;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,10 +19,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -33,43 +28,43 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 public class ModernOptions {
-  public static void showLocationAlert (BaseActivity context, @Nullable String currentInlineUsername, Runnable onCancel, Runnable onAgree) {
+  public static void showLocationAlert (ViewController<?> context, @Nullable String currentInlineUsername, Runnable onCancel, Runnable onAgree) {
     String inlineUsername = "@" + currentInlineUsername;
     showLocationAlert(context, Lang.getStringBold(R.string.LocationAlertBot, inlineUsername), Lang.getStringBold(R.string.LocationAlertBotDisclaimer, inlineUsername), onCancel, onAgree);
   }
 
-  public static void showLocationAlert (BaseActivity context, boolean isBackground, Runnable onCancel, Runnable onAgree) {
-    boolean hasNoPermissions = context.checkLocationPermissions(isBackground) != PackageManager.PERMISSION_GRANTED;
-    boolean shouldShowAlert;
-
-    if (isBackground && Config.REQUEST_BACKGROUND_LOCATION) {
-      shouldShowAlert = (U.shouldShowPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION) || U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) && hasNoPermissions;
-    } else {
-      shouldShowAlert = U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) || hasNoPermissions;
+  public static void showLocationAlert (ViewController<?> context, boolean isBackground, Runnable onCancel, Runnable onAgree) {
+    Permissions permissions = context.context().permissions();
+    boolean hasPermissions = permissions.canAccessLocation() && (!isBackground || permissions.canAccessLocationInBackground());
+    if (hasPermissions) {
+      onAgree.run();
+      return;
     }
-
-    if (shouldShowAlert) {
+    // FIXME: should it actually check for permission rationale?
+    if (
+      (isBackground && permissions.shouldShowBackgroundLocationRationale()) ||
+      permissions.shouldShowAccessLocationRationale()) {
       showLocationAlert(context, Lang.getString(isBackground ? R.string.LocationAlertLiveLocation : R.string.LocationAlertLocation), Lang.getString(R.string.LocationAlertLocationDisclaimer), isBackground ? onCancel : () -> {}, onAgree);
     } else {
       onAgree.run();
     }
   }
 
-  private static void showLocationAlert (BaseActivity context, CharSequence firstLine, CharSequence secondLine, Runnable onCancel, Runnable onAgree) {
+  private static void showLocationAlert (ViewController<?> context, CharSequence firstLine, CharSequence secondLine, Runnable onCancel, Runnable onAgree) {
+    if (!context.isFocused()) {
+      context.addOneShotFocusListener(() -> {
+        showLocationAlert(context, firstLine, secondLine, onCancel, onAgree);
+      });
+      return;
+    }
     Lang.SpanCreator firstItalicCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 1 ? Lang.newItalicSpan(needFakeBold) : null;
     CharSequence desc = Lang.getString(R.string.format_doubleLines, firstItalicCreator, firstLine, secondLine);
 
-    ViewController<?> currentController = context.navigation().getCurrentStackItem();
-
-    if (currentController == null) {
-      onAgree.run();
-      return;
-    }
-
-    addBigColoredHeader(currentController.showOptions(
+    addBigColoredHeader(context.showOptions(
       desc,
       new int[]{R.id.btn_done, R.id.btn_privacyPolicy, R.id.btn_cancel},
       new String[]{Lang.getString(R.string.Continue), Lang.getString(R.string.PrivacyPolicy), Lang.getString(R.string.Cancel)},
@@ -89,7 +84,7 @@ public class ModernOptions {
               break;
             case R.id.btn_privacyPolicy:
               onCancel.run();
-              currentController.tdlib().ui().openUrl(currentController, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
+              context.tdlib().ui().openUrl(context, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
               break;
             case R.id.btn_cancel:
               onCancel.run();

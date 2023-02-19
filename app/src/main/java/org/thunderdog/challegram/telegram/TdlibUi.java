@@ -282,11 +282,27 @@ public class TdlibUi extends Handler {
     }
     final long chatId = TD.getChatId(deletingMessages);
     if (chatId == 0 || !context.tdlib().isSupergroup(chatId)) {
+      // Chat is not supergroup
+      return false;
+    }
+    final TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null || !TD.isAdmin(status) || (status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && !((TdApi.ChatMemberStatusAdministrator) status).rights.canDeleteMessages)) {
+      // User is not a creator or admin with canDeleteMessages right
       return false;
     }
     final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
     if (senderId == null || context.tdlib().isSelfSender(senderId)) {
+      // No need in "delete all" for outgoing messages
       return false;
+    }
+    for (TdApi.Message deletingMessage : deletingMessages) {
+      // No need in "delete all" for outgoing messages
+      // or some of the passed messages can't be deleted at all
+      if (deletingMessage.isOutgoing ||
+        !(deletingMessage.canBeDeletedForAllUsers || deletingMessage.canBeDeletedOnlyForSelf)
+      ) {
+        return false;
+      }
     }
 
     final String name = tdlib.senderName(senderId, true);
@@ -1519,7 +1535,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public boolean handlePhotoOption (Context context, int id, TdApi.User user, EditHeaderView headerView) {
+  public boolean handlePhotoOption (BaseActivity context, int id, TdApi.User user, EditHeaderView headerView) {
     if (user == null && id == R.id.btn_changePhotoDelete && headerView == null) {
       return false;
     }
@@ -1529,7 +1545,7 @@ public class TdlibUi extends Handler {
         return true;
       }
       case R.id.btn_changePhotoGallery: {
-        UI.openGalleryDelayed(false);
+        UI.openGalleryDelayed(context, false);
         return true;
       }
       case R.id.btn_changePhotoDelete: {
