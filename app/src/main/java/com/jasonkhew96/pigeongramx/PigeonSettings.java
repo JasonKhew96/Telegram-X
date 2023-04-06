@@ -23,7 +23,6 @@ public class PigeonSettings {
   private static final int VERSION = VERSION_1;
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static final String KEY_VERSION = "version";
-  public static final String KEY_RECENT_STICKERS_COUNT = "recent_stickers_count";
   public static final String KEY_DISABLE_CAMERA_BUTTON = "disable_camera_button";
   public static final String KEY_DISABLE_RECORD_BUTTON = "disable_record_button";
   public static final String KEY_REMEMBER_SEND_OPTIONS = "remember_send_options";
@@ -181,15 +180,6 @@ public class PigeonSettings {
         listener.onSettingsChanged(key, newSettings, oldSettings);
       }
     }
-  }
-  
-  public int getRecentStickersCount () {
-    return getInt(KEY_RECENT_STICKERS_COUNT, 20);
-  }
-
-  public void setRecentStickersCount (int count) {
-    notifyNewSettingsListeners(KEY_RECENT_STICKERS_COUNT, count, getRecentStickersCount());
-    putInt(KEY_RECENT_STICKERS_COUNT, count);
   }
 
   public boolean isDisableCameraButton () {

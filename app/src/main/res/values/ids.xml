@@ -1252,15 +1252,9 @@
   <item type="id" name="btn_copyImage" />
   <item type="id" name="controller_pigeonSettings" />
   <item type="id" name="btn_pigeonSettings" />
-  <item type="id" name="btn_recentStickersCount" />
   <item type="id" name="btn_disableCameraButton" />
   <item type="id" name="btn_disableRecordButton" />
   <item type="id" name="btn_rememberSendOptions" />
   <item type="id" name="btn_disableStickerTimestamp" />
-  <item type="id" name="btn_recentStickers20" />
-  <item type="id" name="btn_recentStickers40" />
-  <item type="id" name="btn_recentStickers60" />
-  <item type="id" name="btn_recentStickers80" />
-  <item type="id" name="btn_recentStickers100" />
   <item type="id" name="btn_kofi" />
 </resources>
