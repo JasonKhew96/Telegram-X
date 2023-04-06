@@ -5630,7 +5630,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   	          TdApi.InputThumbnail inputThumbnail = new TdApi.InputThumbnail((TdApi.InputFile) new TdApi.InputFileLocal(sticker.thumbnail.file.local.path), sticker.thumbnail.width, sticker.thumbnail.height);
               tdlib.client().send(new TdApi.SendMessage(msg.chatId, msgThreadId, 0, null, null, new TdApi.InputMessageSticker(inputSticker, inputThumbnail, sticker.width, sticker.height, sticker.emoji)), tdlib.messageHandler());
             }
-            clearSelectedMessage();
+            clearSelectedMessageIds();
           }
           return true;
         }
