@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -121,7 +121,7 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
       c = provider.createControllerForPosition(position);
       controllers.put(position, c);
     }
-    View view = c.get();
+    View view = c.getValue();
     if (view.getParent() != null) {
       ((ViewGroup) view.getParent()).removeView(view);
     }
@@ -134,7 +134,7 @@ public class ViewControllerPagerAdapter extends PagerAdapter implements Destroya
   @Override
   public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
     ViewController<?> c = (ViewController<?>) object;
-    container.removeView(c.get());
+    container.removeView(c.getValue());
     provider.onAfterHide(position, c);
     c.onCleanAfterHide();
   }

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -873,7 +873,7 @@ public class SettingsController extends ViewController<Void> implements
     if (tdlib.isConnected()) {
       return Lang.lowercase(Lang.getString(tdlib.myUser() != null ? R.string.status_Online : R.string.network_Connecting));
     } else {
-      return Lang.lowercase(Lang.getString(TdlibUi.stringForConnectionState(tdlib.connectionState())));
+      return Lang.lowercase(tdlib.connectionStateText());
     }
   }
 
@@ -942,7 +942,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
-  public void onConnectionStateChanged (int newState, int oldState) {
+  public void onConnectionDisplayStatusChanged () {
     runOnUiThreadOptional(() -> {
       if (headerCell != null) {
         headerCell.setSubtitle(getSubtext());
@@ -971,8 +971,20 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void viewSourceCode (boolean isTdlib) {
-    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
-    tdlib.ui().openUrl(this, isTdlib ? appBuildInfo.tdlibCommitUrl() : appBuildInfo.commitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
+    String url;
+    if (isTdlib) {
+      String tdlibCommitHash = Td.tdlibCommitHashFull();
+      url = AppBuildInfo.tdlibCommitUrl(tdlibCommitHash);
+    } else {
+      AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+      url = appBuildInfo.commitUrl();
+    }
+    if (!StringUtils.isEmpty(url)) {
+      tdlib.ui().openUrl(this,
+        url,
+        new TdlibUi.UrlOpenParameters().disableInstantView()
+      );
+    }
   }
 
   @Override
@@ -1034,7 +1046,7 @@ public class SettingsController extends ViewController<Void> implements
           }
           b.item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
           if (appBuildInfo.getTdlibCommitFull() != null) {
-            b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), appBuildInfo.tdlibCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
+            b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
           }
           int i = 0;
           for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {

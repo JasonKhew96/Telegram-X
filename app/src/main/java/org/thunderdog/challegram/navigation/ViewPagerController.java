@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -465,9 +465,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public final @NonNull ViewController<?> getPreparedControllerForPosition (int position) {
     if (adapter == null)
-      get();
+      getValue();
     ViewController<?> c = adapter.prepareViewController(position);
-    c.get();
+    c.getValue();
     return c;
   }
 
@@ -478,7 +478,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
         if (after != null) {
           c.postOnAnimationExecute(after);
         }
-        c.get();
+        c.getValue();
         return;
       }
     }
@@ -550,7 +550,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
     @Override
     public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
-      container.removeView(((ViewController<?>) object).get());
+      container.removeView(((ViewController<?>) object).getValue());
     }
 
     public void destroyCachedItems () {
@@ -594,7 +594,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     @NonNull
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
-      container.addView(c.get());
+      container.addView(c.getValue());
       if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {
         parent.context().checkDisallowScreenshots();
       }

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,4 +19,5 @@ import org.drinkless.td.libcore.telegram.TdApi;
 public interface ConnectionListener {
   default void onConnectionStateChanged (@ConnectionState int newState, int oldState) { }
   default void onConnectionTypeChanged (TdApi.NetworkType type) { }
+  default void onConnectionDisplayStatusChanged () { }
 }

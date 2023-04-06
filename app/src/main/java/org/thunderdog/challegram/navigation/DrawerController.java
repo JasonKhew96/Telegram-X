@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -824,7 +824,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         break;
       }
       case R.id.btn_tdlib_shareLogs: {
-        TdlibUi.sendLogs(context.navigation().getCurrentStackItem(), false, false);
+        TdlibUi.sendTdlibLogs(context.navigation().getCurrentStackItem(), false, false);
         break;
       }
       case R.id.btn_wallet: {
@@ -939,7 +939,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
-  public void onProxyConfigurationChanged (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type, String description, boolean isCurrent, boolean isNewAdd) {
+  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
     if (!isCurrent) {
       return;
     }
@@ -1091,7 +1091,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     });
 
     ViewController<?> c = UI.getCurrentStackItem(context());
-    View view = c != null ? c.get() : null;
+    View view = c != null ? c.getValue() : null;
     if (view != null && view instanceof ContentFrameLayout) {
       currentView = (ContentFrameLayout) view;
     } else {
@@ -1226,7 +1226,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   private float getScreenWidth () {
-    return context.navigation().get().getMeasuredWidth();
+    return context.navigation().getValue().getMeasuredWidth();
   }
 
   public void translate (int lastScrollX) {

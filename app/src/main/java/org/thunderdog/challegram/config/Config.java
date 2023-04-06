@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,8 +79,6 @@ public class Config {
   public static final boolean ALLOW_SEEK_ANYTIME = true;
 
   public static final boolean NEED_NETWORK_SYNC_REQUEST = false;
-
-  public static final boolean VIEW_MESSAGES_BEFORE_SCROLL = false;
 
   // Fields from default config.
 
@@ -166,7 +164,8 @@ public class Config {
 
   public static final boolean USE_GROUP_NAMES = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
 
-  public static final boolean HEADLESS_RECENT_PACK = false;
+  public static final boolean FORCE_SHOW_RECENTS_STICKERS_TITLE = false;
+  public static final int DEFAULT_SHOW_RECENT_STICKERS_COUNT = 10;
 
   public static final boolean USE_TEXT_ADVANCE = true; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
 
@@ -257,7 +256,7 @@ public class Config {
 
   public static final boolean REVEAL_ANIMATION_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
-  public static final boolean REMOVE_INTRO = !BuildConfig.DEBUG; // true;
+  public static final boolean REMOVE_INTRO = true;
 
   public static final boolean TEST_CHAT_COUNTERS = false;
 
@@ -294,4 +293,6 @@ public class Config {
   public static final boolean NEED_TEMPORARY_TOPICS_WORKAROUND = true;
 
   public static final boolean USE_HARDWARE_PHOTO_VIEWER_CONFIG = false;
+
+  public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
 }

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -292,13 +293,34 @@ public abstract class SettingsCloudController<T extends Settings.CloudSetting> e
     });
   }
 
+  private CancellationSignal installationSignal;
+
   private void downloadAndInstall (T setting) {
     installingSetting = setting;
     isInstalling = false;
-    if (setting.isBuiltIn() || setting.getFile() == null || setting.isInstalled() || TD.isFileLoadedAndExists(setting.getFile())) {
+    if (installationSignal != null) {
+      installationSignal.cancel();
+      installationSignal = null;
+    }
+    if (setting.isBuiltIn() || setting.getFile() == null || setting.isInstalled()) {
       install(setting);
     } else {
-      tdlib.files().addCloudReference(setting.getFile(), this, false);
+      CancellationSignal signal = new CancellationSignal();
+      installationSignal = signal;
+      TdApi.File file = setting.getFile();
+      tdlib.files().isFileLoadedAndExists(file, isLoadedAndExists -> {
+        if (!signal.isCanceled()) {
+          if (isLoadedAndExists) {
+            runOnUiThreadOptional(() -> {
+              if (!signal.isCanceled()) {
+                install(setting);
+              }
+            });
+          } else {
+            tdlib.files().addCloudReference(file, this, false);
+          }
+        }
+      });
     }
   }
 

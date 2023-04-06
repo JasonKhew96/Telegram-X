@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.receiver.LiveLocationReceiver;
 import org.thunderdog.challegram.receiver.TGShareBroadcastReceiver;
+import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.Permissions;
 
@@ -120,7 +121,11 @@ public class Intents {
       channel.enableVibration(false);
       channel.enableLights(false);
       channel.setSound(null, null);
-      m.createNotificationChannel(channel);
+      try {
+        m.createNotificationChannel(channel);
+      } catch (Throwable t) {
+        Log.v("Unable to create simple notification channel for id: %s", new TdlibNotificationChannelGroup.ChannelCreationFailureException(t), channelId);
+      }
     }
     return channelId;
   }
@@ -221,38 +226,36 @@ public class Intents {
     return openExcludeCurrentImpl(intent, null);
   }
 
+  public static void sendEmail (String email) {
+    sendEmail(email, "", "");
+  }
+
   public static void sendEmail (String emailAddress, String subject, String text) {
     sendEmail(emailAddress, subject, text, null);
   }
 
   public static void sendEmail (String emailAddress, String subject, String text, @Nullable String fallbackText) {
     try {
-      Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-        "mailto", emailAddress, null));
-      intent.putExtra(Intent.EXTRA_SUBJECT, subject);
-      intent.putExtra(Intent.EXTRA_TEXT, text);
-      intent.putExtra(Intent.EXTRA_EMAIL, new String[] {emailAddress});
-      UI.startActivity(Intent.createChooser(intent, Lang.getString(R.string.SendMessageToX, emailAddress)));
+      Intent selectorIntent = new Intent(Intent.ACTION_SENDTO);
+      selectorIntent.setData(Uri.parse("mailto:"));
+
+      Intent emailIntent = new Intent(Intent.ACTION_SEND);
+      emailIntent.putExtra(Intent.EXTRA_EMAIL, new String[] {emailAddress});
+      emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+      emailIntent.putExtra(Intent.EXTRA_TEXT, text);
+      emailIntent.setSelector(selectorIntent);
+
+      UI.startActivity(Intent.createChooser(emailIntent, Lang.getString(R.string.SendMessageToX, emailAddress)));
     } catch (Throwable t) {
       if (fallbackText != null) {
         UI.showToast(fallbackText, Toast.LENGTH_LONG);
       } else {
         UI.showToast(R.string.NoEmailApp, Toast.LENGTH_SHORT);
         UI.showToast(Lang.getString(R.string.SendMessageToX, emailAddress), Toast.LENGTH_LONG);
+        if (!StringUtils.isEmpty(text)) {
+          shareText(text);
+        }
       }
-    }
-  }
-
-  public static void sendEmail (String email) {
-    try {
-      Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
-        "mailto", email, null));
-      intent.putExtra(Intent.EXTRA_SUBJECT, "");
-      intent.putExtra(Intent.EXTRA_TEXT, "");
-      intent.putExtra(Intent.EXTRA_EMAIL, new String[] {email});
-      UI.startActivity(Intent.createChooser(intent, Lang.getString(R.string.SendMessageToX, email)));
-    } catch (Throwable t) {
-      UI.showToast("No Email app found", Toast.LENGTH_SHORT);
     }
   }
 

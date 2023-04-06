@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,6 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -155,7 +154,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private Drawable vsUniqueIconRef;
   private int vsUniqueIconRefId;
 
-  private float requestedAlpha;
+  private float requestedAlpha = 1f, cloudAlpha = 1f;
 
   private @Nullable SimpleListener listener;
   private @Nullable FallbackFileProvider fallbackFileProvider;
@@ -174,7 +173,6 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     this.invalidateContentReceiver = invalidateContentReceiver;
     this.backgroundColor = 0x66000000; // 40% of black
     this.alpha = 1f;
-    this.requestedAlpha = 1f;
     this.chatId = chatId;
     this.messageId = messageId;
   }
@@ -257,8 +255,12 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   public void setRequestedAlpha (float alpha) {
-    if (this.requestedAlpha != alpha) {
+    setRequestedAlpha(alpha, alpha);
+  }
+  public void setRequestedAlpha (float alpha, float cloudAlpha) {
+    if (this.requestedAlpha != alpha || this.cloudAlpha != cloudAlpha) {
       this.requestedAlpha = alpha;
+      this.cloudAlpha = cloudAlpha;
       invalidate();
     }
   }
@@ -545,11 +547,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
             case TdApi.File.CONSTRUCTOR: {
               TdApi.File downloadedFile = (TdApi.File) result;
               if (TD.isFileLoaded(downloadedFile)) {
-                if (BitwiseUtils.getFlag(flags, FLAG_THEME)) {
+                if (BitwiseUtils.hasFlag(flags, FLAG_THEME)) {
                   runOnUiThreadOptional(c, () -> {
                     c.tdlib().ui().readCustomTheme(c, file, null, defaultOpen);
                   });
-                } else if (BitwiseUtils.getFlag(flags, FLAG_MEDIA_DOCUMENT)) {
+                } else if (BitwiseUtils.hasFlag(flags, FLAG_MEDIA_DOCUMENT)) {
                   Background.instance().post(() -> {
                     MediaItem item = MediaItem.valueOf(context, tdlib, originalDocument, null);
                     if (item != null) {
@@ -1435,8 +1437,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public <T extends View & DrawableProvider> void draw (T view, final Canvas c) {
     final boolean cloudPlayback = Config.useCloudPlayback(playPauseFile) && !noCloud;
-    final float alpha = this.alpha * requestedAlpha;
-    final boolean drawContent = file != null && alpha != 0f && !isTrack;
+    final float playPauseAlpha = this.alpha * requestedAlpha;
+    final float alpha = this.alpha * (isVideoStreaming() ? cloudAlpha : requestedAlpha);
+    final boolean drawContent = file != null && alpha > 0f && !isTrack;
     boolean isCanvasAltered = false;
     if (drawContent) {
       int cx = centerX();
@@ -1452,15 +1455,15 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
 
       final int fillingColor;
-      if (alpha == 1f) {
+      if (playPauseAlpha == 1f) {
         fillingColor = backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor;
       } else {
-        fillingColor = ColorUtils.alphaColor(alpha, backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor);
+        fillingColor = ColorUtils.alphaColor(playPauseAlpha, backgroundColorIsId ? Theme.getColor(backgroundColor) : backgroundColor);
       }
 
       if (isVideoStreaming()) {
         c.drawCircle(centerX(), centerY(), Screen.dp(videoStreamingUiMode == STREAMING_UI_MODE_LARGE ? DEFAULT_RADIUS : DEFAULT_STREAMING_RADIUS), Paints.fillingPaint(fillingColor));
-        drawPlayPause(c, centerX(), centerY(), alpha, true);
+        drawPlayPause(c, centerX(), centerY(), playPauseAlpha, true);
 
         if (!vsClipRect.isEmpty() && !isVideoStreamingCloudNeeded) {
           c.save();
@@ -1470,14 +1473,14 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
         }
 
         if (isVideoStreamingCloudNeeded) {
-          drawCloudState(c, alpha);
+          drawCloudState(c, playPauseAlpha);
         }
       } else {
         c.drawCircle(cx, cy, getRadius(), Paints.fillingPaint(fillingColor));
       }
 
       if (cloudPlayback) {
-        drawPlayPause(c, cx, cy, alpha, true);
+        drawPlayPause(c, cx, cy, playPauseAlpha, true);
       } else if (currentBitmapRes != 0 && (currentBitmapRes != downloadedIconRes || !hideDownloadedIcon) && !(isVideoStreaming() && isVideoStreamingCloudNeeded)) {
         boolean ignoreScale = isVideoStreaming() && !isVideoStreamingSmallUi() && vsOnDownloadedAnimator != null && vsOnDownloadedAnimator.isAnimating();
         Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);
@@ -1531,7 +1534,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       }
     }
     if (cloudPlayback) {
-      drawCloudState(c, alpha); 
+      drawCloudState(c, playPauseAlpha);
     }
     if (progress != null && !isVideoStreamingProgressHidden) {
       progress.setAlpha(alpha);

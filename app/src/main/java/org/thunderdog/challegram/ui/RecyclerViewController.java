@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -365,7 +365,7 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
         }
       });
       doneButton.setLayoutParams(params);
-      ((ViewGroup) get()).addView(doneButton);
+      ((ViewGroup) getValue()).addView(doneButton);
     }
     return doneButton;
   }

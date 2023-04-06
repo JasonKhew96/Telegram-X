@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.util.text.Letters;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -82,7 +81,7 @@ public class TdlibSender {
         this.name = TD.getUserName(userId, user);
         this.nameShort = TD.getUserSingleName(userId, user);
         this.usernames = user != null ? user.usernames : null;
-        this.photo = profilePhoto != null ? new TdApi.ChatPhotoInfo(profilePhoto.small, profilePhoto.big, profilePhoto.minithumbnail, profilePhoto.hasAnimation) : null;
+        this.photo = profilePhoto != null ? new TdApi.ChatPhotoInfo(profilePhoto.small, profilePhoto.big, profilePhoto.minithumbnail, profilePhoto.hasAnimation, profilePhoto.isPersonal) : null;
         this.letters = TD.getLetters(user);
         this.placeholderMetadata = tdlib.cache().userPlaceholderMetadata(userId, user, false);
 
@@ -117,7 +116,7 @@ public class TdlibSender {
   }
 
   public boolean isDemo () {
-    return BitwiseUtils.getFlag(flags, FLAG_DEMO);
+    return BitwiseUtils.hasFlag(flags, FLAG_DEMO);
   }
 
   public boolean isSameSender (@Nullable TdlibSender sender) {
@@ -195,19 +194,19 @@ public class TdlibSender {
   }
 
   public boolean isBot () {
-    return BitwiseUtils.getFlag(flags, FLAG_BOT);
+    return BitwiseUtils.hasFlag(flags, FLAG_BOT);
   }
 
   public boolean isServiceAccount () {
-    return BitwiseUtils.getFlag(flags, FLAG_SERVICE_ACCOUNT);
+    return BitwiseUtils.hasFlag(flags, FLAG_SERVICE_ACCOUNT);
   }
 
   public boolean isScam () {
-    return BitwiseUtils.getFlag(flags, FLAG_SCAM);
+    return BitwiseUtils.hasFlag(flags, FLAG_SCAM);
   }
 
   public boolean isFake () {
-    return BitwiseUtils.getFlag(flags, FLAG_FAKE);
+    return BitwiseUtils.hasFlag(flags, FLAG_FAKE);
   }
 
   public boolean hasChatMark () {

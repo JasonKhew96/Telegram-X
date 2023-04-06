@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -400,11 +400,11 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
     if (navigationController != null) {
       SettingsDataController dataController = new SettingsDataController(context, tdlib);
       setArguments(dataController);
-      dataController.get();
+      dataController.getValue();
       navigationController.insertController(dataController, 0);
       SettingsController c = new SettingsController(context, tdlib);
       navigationController.insertController(c, 0);
-      c.get();
+      c.getValue();
     }
     tdlib.client().send(new TdApi.GetStorageStatisticsFast(), this);
     getStats(false);
@@ -987,7 +987,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             public void onEraseDataCompleted() {
               MainController c = new MainController(context, tdlib);
               onDataErased();
-              c.get();
+              c.getValue();
               navigationController().insertController(c, 0);
             }
           });

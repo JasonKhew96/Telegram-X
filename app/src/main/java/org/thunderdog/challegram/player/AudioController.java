@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -364,7 +364,7 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
       exoPlayer = null;
     }
 
-    exoPlayer = U.newExoPlayer(UI.getAppContext(), true);
+    ExoPlayer exoPlayer = this.exoPlayer = U.newExoPlayer(UI.getAppContext(), true);
     exoPlayer.addListener(this);
     setExoPlayerParameters();
     exoPlayer.setVolume(volume);
@@ -616,6 +616,9 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
   // ExoPlayer seek
 
   private static void seekTo (@NonNull Player player, int windowIndex, int totalSize, boolean reverse) {
+    if (player == null) {
+      throw new NullPointerException();
+    }
     Log.i(Log.TAG_PLAYER, "seekTo windowIndex:%d size:%d, reverse:%b", windowIndex, totalSize, reverse);
     try {
       player.seekToDefaultPosition(reverse ? totalSize - windowIndex - 1 : windowIndex);

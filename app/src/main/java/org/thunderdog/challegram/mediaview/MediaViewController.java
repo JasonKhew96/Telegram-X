@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.mediaview;
 
-import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -183,7 +182,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target, View.OnClickListener,
   MediaStackCallback, MediaFiltersAdapter.Callback, Watcher, RotationControlView.Callback, MediaView.ClickListener,
   EmojiLayout.Listener, InputView.InputListener, InlineResultsWrap.OffsetProvider,
-  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, Client.ResultHandler, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
+  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
 
   private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
   private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
@@ -1586,9 +1585,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (id) {
       case R.id.btn_saveToGallery: {
         TdApi.File file = item.getTargetFile();
-        if (TD.isFileLoadedAndExists(file)) {
-          U.copyToGallery(context, file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
-        }
+        tdlib.files().isFileLoadedAndExists(file, isLoadedAndExists -> {
+          if (isLoadedAndExists) {
+            runOnUiThreadOptional(() -> {
+              U.copyToGallery(context, file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+            });
+          }
+        });
         break;
       }
       case R.id.btn_copyImage: {
@@ -1748,7 +1751,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case R.id.btn_setProfilePhoto: {
         final long photoId = item.getPhotoId();
-        tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId)), tdlib.okHandler());
+        tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId), false), tdlib.okHandler());
         close();
         break;
       }
@@ -1961,6 +1964,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     String time = item.getSourceDate() != 0 ? Lang.getMessageTimestamp(item.getSourceDate(), TimeUnit.SECONDS) : null;
     switch (mode) {
       case MODE_MESSAGES: {
+        TdApi.Message message = item.getMessage();
+        if (message != null && message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+          TdApi.MessageText messageText = (TdApi.MessageText) message.content;
+          if (messageText.webPage != null) {
+            if (!StringUtils.isEmpty(messageText.webPage.author)) {
+              return messageText.webPage.author;
+            }
+            return messageText.webPage.displayUrl;
+          }
+        }
         String authorText = getAuthorText(item);
         if (authorText != null) {
           SpannableStringBuilder b = new SpannableStringBuilder(authorText);
@@ -2017,7 +2030,25 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private TdApi.SearchMessagesFilter searchFilter () {
-    return this.filter != null ? this.filter : new TdApi.SearchMessagesFilterPhotoAndVideo();
+    return this.filter != null ? this.filter : mode == MODE_CHAT_PROFILE ? new TdApi.SearchMessagesFilterChatPhoto() : new TdApi.SearchMessagesFilterPhotoAndVideo();
+  }
+
+  private Client.ResultHandler foundChatMessagesHandler (long chatId, long fromMessageId, int loadCount) {
+    return result -> {
+      switch (result.getConstructor()) {
+        case TdApi.FoundChatMessages.CONSTRUCTOR: {
+          TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) result;
+          runOnUiThreadOptional(() ->
+            addItems(chatId, fromMessageId, loadCount, foundChatMessages)
+          );
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(result);
+          break;
+        }
+      }
+    };
   }
 
   private void loadMoreIfNeeded (boolean edgeReached, boolean isEnd) {
@@ -2027,13 +2058,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (mode) {
       case MODE_MESSAGES: {
         long chatId = stack.getCurrent().getSourceChatId();
-        if (chatId == 0) {
+        if (chatId == 0 || getArgumentsStrict().areOnlyScheduled) {
           return;
         }
         if (!loadedInitialChunk || (reverseMode ? (edgeReached && isEnd) || stack.getCurrentIndex() >= stack.getCurrentSize() - LOAD_THRESHOLD : (edgeReached && !isEnd) || stack.getCurrentIndex() <= LOAD_THRESHOLD)) {
           isLoading = true;
           MediaItem item = reverseMode ? stack.lastAvalable() : stack.firstAvailable();
-          tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, item.getSourceMessageId(), 0, LOAD_COUNT, searchFilter(), messageThreadId), this);
+          long initialFromMessageId = item.getSourceMessageId();
+          TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
+            chatId, null, null,
+            initialFromMessageId, 0,
+            LOAD_COUNT, searchFilter(),
+            messageThreadId
+          );
+          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT));
         }
         break;
       }
@@ -2042,7 +2080,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (!loadedInitialChunk || (edgeReached && isEnd) || stack.getCurrentIndex() <= stack.getCurrentSize() - LOAD_THRESHOLD) {
           isLoading = true;
           MediaItem item = stack.lastAvalable();
-          tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, item.getSourceMessageId(), 0, LOAD_COUNT_PROFILE, this.filter != null ? this.filter : new TdApi.SearchMessagesFilterChatPhoto(), messageThreadId), this);
+          long initialFromMessageId = item.getSourceMessageId();
+          TdApi.SearchChatMessages searchFunction = new TdApi.SearchChatMessages(
+            chatId, null, null,
+            initialFromMessageId, 0,
+            LOAD_COUNT_PROFILE, searchFilter(),
+            messageThreadId
+          );
+          tdlib.client().send(searchFunction, foundChatMessagesHandler(chatId, initialFromMessageId, LOAD_COUNT_PROFILE));
         }
         break;
       }
@@ -2050,7 +2095,25 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         long userId = Td.getSenderUserId(stack.getCurrent().getSourceSender());
         if (!loadedInitialChunk || (edgeReached && isEnd) || stack.getCurrentIndex() <= stack.getCurrentSize() - LOAD_THRESHOLD) {
           isLoading = true;
-          tdlib.client().send(new TdApi.GetUserProfilePhotos(userId, loadedInitialChunk ? stack.getCurrentSize() : 0, LOAD_COUNT_PROFILE), this);
+          TdApi.GetUserProfilePhotos searchFunction = new TdApi.GetUserProfilePhotos(
+            userId,
+            loadedInitialChunk ? stack.getCurrentSize() : 0,
+            LOAD_COUNT_PROFILE
+          );
+          tdlib.client().send(searchFunction, result -> {
+            switch (result.getConstructor()) {
+              case TdApi.ChatPhotos.CONSTRUCTOR: {
+                runOnUiThreadOptional(() ->
+                  addItems((TdApi.ChatPhotos) result)
+                );
+                break;
+              }
+              case TdApi.Error.CONSTRUCTOR: {
+                UI.showError(result);
+                break;
+              }
+            }
+          });
         }
         break;
       }
@@ -2106,7 +2169,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private void addItems (TdApi.Messages messages) {
+  private void addItems (long chatId, long fromMessageId, int loadCount, TdApi.FoundChatMessages messages) {
+    long messagesChatId = TD.getChatId(messages.messages);
+    if (messagesChatId == 0) {
+      messagesChatId = chatId;
+    }
     List<TdApi.Message> list = new ArrayList<>(messages.messages.length);
     for (TdApi.Message message : messages.messages) {
       if (!Td.isSecret(message.content)) {
@@ -2114,21 +2181,21 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
     }
     int addedCount = addItemsImpl(list, messages.totalCount);
-    if (messages.messages.length > 0) {
-      long chatId = TD.getChatId(messages.messages);
-      if (chatId != 0) {
-        subscribeToChatId(chatId);
-      }
+    if (messagesChatId != 0) {
+      subscribeToChatId(messagesChatId);
     }
-    if (addedCount == 0 && messages.messages.length > 0 && mode == MODE_MESSAGES) {
-      long chatId = messages.messages[0].chatId;
-      long fromMessageId = messages.messages[messages.messages.length - 1].id;
-      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, 0, LOAD_COUNT, searchFilter(), messageThreadId), this);
-      return;
-    }
-    if (addedCount == 0 && messages.messages.length == 0) {
+    if (messages.nextFromMessageId == 0 || (addedCount == 0 && messages.nextFromMessageId == fromMessageId)) {
       stack.onEndReached(reverseMode);
       getArgumentsStrict().noLoadMore = true;
+    } else if (addedCount == 0) {
+      TdApi.SearchChatMessages retryFunction = new TdApi.SearchChatMessages(
+        chatId, null, null,
+        messages.nextFromMessageId, 0,
+        loadCount, searchFilter(),
+        messageThreadId
+      );
+      tdlib.client().send(retryFunction, foundChatMessagesHandler(chatId, messages.nextFromMessageId, loadCount));
+      return;
     }
     isLoading = false;
   }
@@ -2171,7 +2238,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         skipCount--;
         continue;
       }
-      if (TD.isSecret(msg) || (!ChatId.isSecret(msg.chatId) && msg.ttl != 0)) // skip self-destructing images
+      if (TD.isSecret(msg) || (!ChatId.isSecret(msg.chatId) && msg.selfDestructTime != 0)) // skip self-destructing images
         continue;
 
       MediaItem item = MediaItem.valueOf(context(), tdlib, msg);
@@ -2233,6 +2300,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         MediaItem newItem = MediaItem.valueOf(context(), tdlib, message);
         if (newItem != null) {
           replaceMedia(index, oldItem, newItem);
+          headerCell.setSubtitle(genSubtitle());
         } else if (stack.getCurrentIndex() == index) {
           forceClose();
         } else {
@@ -2259,22 +2327,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
       }
     });
-  }
-
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.ChatPhotos.CONSTRUCTOR: {
-        final TdApi.ChatPhotos photos = (TdApi.ChatPhotos) object;
-        runOnUiThreadOptional(() -> addItems(photos));
-        break;
-      }
-      case TdApi.Messages.CONSTRUCTOR: {
-        final TdApi.Messages messages = (TdApi.Messages) object;
-        runOnUiThreadOptional(() -> addItems(messages));
-        break;
-      }
-    }
   }
 
   // Picture-in-picture stuff
@@ -4915,24 +4967,65 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
 
         if (chat != null) {
-          tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, hapticItems -> {
+          tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, () -> true, hapticItems -> {
+            if (sendDelegate != null && sendDelegate.allowHideMedia()) {
+              hapticItems.add(0,
+                new HapticMenuHelper.MenuItem(R.id.btn_spoiler, Lang.getString(R.string.HideMedia), R.drawable.deproko_baseline_whatshot_24)
+                  .setIsCheckbox(true, sendDelegate.isHideMediaEnabled())
+                  .setOnClickListener(new HapticMenuHelper.OnItemClickListener() {
+                    private TooltipOverlayView.TooltipInfo hotTooltipInfo;
+
+                    @Override
+                    public boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
+                      if (view.getId() == R.id.btn_spoiler) {
+                        if (item.isCheckboxSelected) {
+                          hotTooltipInfo = context().tooltipManager().builder(view)
+                            .icon(R.drawable.baseline_whatshot_24)
+                            .color(context().tooltipManager().overrideColorProvider(getForcedTheme()))
+                            .locate((targetView, outRect) -> {
+                              int centerX = outRect.left + Screen.dp(29f);
+                              int centerY = outRect.centerY();
+                              int radius = Screen.dp(11f);
+                              outRect.left = centerX - radius;
+                              outRect.right = centerX + radius;
+                              outRect.top = centerY - radius;
+                              outRect.bottom = centerY + radius;
+                            })
+                            .show(tdlib, R.string.MediaSpoilerHint)
+                            .hideDelayed();
+                        } else {
+                          if (hotTooltipInfo != null) {
+                            hotTooltipInfo.hideNow();
+                            hotTooltipInfo = null;
+                          }
+                        }
+                        sendDelegate.onHideMediaStateChanged(item.isCheckboxSelected);
+                        return true;
+                      }
+                      return false;
+                    }
+                  })
+              );
+            }
             int sendAsFile = canSendAsFile();
             if (sendAsFile != SEND_MODE_NONE) {
               boolean onlyVideos = sendAsFile == SEND_MODE_VIDEOS;
               int count = selectDelegate != null ? selectDelegate.getSelectedMediaCount() : 1;
-              hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(onlyVideos ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(onlyVideos ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
-                if (v.getId() == R.id.btn_sendAsFile) {
-                  send(Td.newSendOptions(), false, true);
+              hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(onlyVideos ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(onlyVideos ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener((view, parentView, item) -> {
+                if (view.getId() == R.id.btn_sendAsFile) {
+                  send(sendButton, Td.newSendOptions(), false, true);
                 }
+                return true;
               }).bindTutorialFlag(Settings.TUTORIAL_SEND_AS_FILE));
             }
             if (senderSendIcon != null) {
-              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener(v -> {
+              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener((view, parentView, item) -> {
                 openSetSenderPopup(chat);
+                return true;
               }));
             }
           }, (sendOptions, disableMarkdown) -> {
-            send(sendOptions, disableMarkdown, false);
+            send(sendButton, sendOptions, disableMarkdown, false);
           }, getForcedTheme()).attachToView(sendButton);
         }
 
@@ -5464,6 +5557,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     TGLegacyManager.instance().addEmojiListener(this);
     tdlib.context().calls().addCurrentCallListener(this);
+    if (stack.getCurrent().getSourceChatId() != 0) {
+      subscribeToChatId(stack.getCurrent().getSourceChatId());
+    }
 
     return contentView;
   }
@@ -7836,7 +7932,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (currentSection != SECTION_CAPTION) {
           changeSection(SECTION_CAPTION, MODE_OK);
         } else {
-          send(Td.newSendOptions(), false, false);
+          send(v, Td.newSendOptions(), false, false);
         }
         break;
       }
@@ -8024,7 +8120,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   // Etc
 
   public void open () {
-    get();
+    getValue();
     popupView.showAnimatedPopupView(contentView, this);
   }
 
@@ -8120,20 +8216,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return SEND_MODE_NONE;
   }
 
-  public void send (TdApi.MessageSendOptions initialSendOptions, boolean disableMarkdown, boolean asFiles) {
+  public void send (View view, TdApi.MessageSendOptions initialSendOptions, boolean disableMarkdown, boolean asFiles) {
     if (sendDelegate == null) {
       return;
     }
 
     if (initialSendOptions.schedulingState == null && getArgumentsStrict().areOnlyScheduled) {
       tdlib.ui().showScheduleOptions(this, getOutputChatId(), false, (modifiedSendOptions, disableMarkdown1) -> {
-        send(modifiedSendOptions, disableMarkdown, asFiles);
+        send(view, modifiedSendOptions, disableMarkdown, asFiles);
       }, initialSendOptions, getForcedTheme());
       return;
     }
-
-    forceAnimationType = ANIMATION_TYPE_FADE;
-    isMediaSent = true;
 
     ArrayList<ImageFile> imageFiles = selectDelegate != null ? selectDelegate.getSelectedMediaItems(true) : null;
 
@@ -8144,9 +8237,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       imageFiles.add(stack.getCurrent().getSourceGalleryFile());
     }
 
-    sendDelegate.sendSelectedItems(imageFiles, initialSendOptions, disableMarkdown, asFiles);
-    setUIBlocked(true);
-    popupView.hideWindow(true);
+    if (sendDelegate.sendSelectedItems(view, imageFiles, initialSendOptions, disableMarkdown, asFiles, sendDelegate.isHideMediaEnabled())) {
+      forceAnimationType = ANIMATION_TYPE_FADE;
+      isMediaSent = true;
+      setUIBlocked(true);
+      popupView.hideWindow(true);
+    }
   }
 
   private boolean isProfileStack () {
@@ -8282,6 +8378,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ((MediaCollectorDelegate) context).modifyMediaArguments(message, args);
     }
     args.noLoadMore = message.isEventLog();
+    args.areOnlyScheduled = message.isScheduled();
 
     openWithArgs(context, args);
   }
@@ -8300,33 +8397,23 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     MediaStack stack;
 
     stack = new MediaStack(context.context(), context.tdlib());
-    String subtitle = webPage.displayUrl;
-    TdApi.Message m = msg.getMessage();
-    TdApi.FormattedText text = msg.getText();
 
     ArrayList<MediaItem> items = parsedWebPage.getInstantItems();
     if (items != null) {
       stack.set(parsedWebPage.getInstantPosition(), items);
-      if (!StringUtils.isEmpty(webPage.author)) {
-        subtitle = webPage.author;
-      }
-    } else if (webPage.sticker != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), msg.getChatId(), msg.getId(), TD.convertToPhoto(webPage.sticker), true, false).setSourceMessageId(m.chatId, m.id));
-    } else if (webPage.video != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), webPage.video, new TdApi.FormattedText("", null), true).setSourceMessageId(m.chatId, m.id));
-    } else if (webPage.animation != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), webPage.animation, null).setSourceMessageId(m.chatId, m.id));
-    } else if (webPage.photo != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), msg.getChatId(), msg.getId(), webPage.photo).setSourceMessageId(m.chatId, m.id));
     } else {
-      return;
+      MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), msg.getMessage());
+      if (item == null) {
+        return;
+      }
+      stack.set(item);
     }
 
     Args args = new Args(context, MODE_MESSAGES, stack);
     args.noLoadMore = true;
-    args.customSubtitle = subtitle;
     args.copyLink = webPage.url;
     args.forceThumbs = true;
+    args.areOnlyScheduled = msg.isScheduled();
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
@@ -8358,15 +8445,32 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     TdApi.SearchMessagesFilter filter = null;
     switch (msg.content.getConstructor()) {
+      case TdApi.MessagePhoto.CONSTRUCTOR: {
+        filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
+        break;
+      }
+      case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
+        filter = new TdApi.SearchMessagesFilterChatPhoto();
+        break;
+      }
       case TdApi.MessageVideo.CONSTRUCTOR: {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
           TdApi.Video video = ((TdApi.MessageVideo) msg.content).video;
           UI.openFile(messageContainer.controller(), null, new File(video.video.local.path), "video/mp4", TD.getViewCount(msg.interactionInfo));
         }
+        filter = new TdApi.SearchMessagesFilterPhotoAndVideo();
         break;
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
         filter = new TdApi.SearchMessagesFilterAnimation();
+        break;
+      }
+      case TdApi.MessageText.CONSTRUCTOR: {
+        filter = new TdApi.SearchMessagesFilterUrl();
+        break;
+      }
+      case TdApi.MessageDocument.CONSTRUCTOR: {
+        filter = new TdApi.SearchMessagesFilterDocument();
         break;
       }
     }
@@ -8392,6 +8496,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     args.setFilter(filter);
     args.setMessageThreadId(messageContainer.messagesController().getMessageThreadId());
+    args.areOnlyScheduled = TD.isScheduled(msg);
 
     openWithArgs(context, args);
   }

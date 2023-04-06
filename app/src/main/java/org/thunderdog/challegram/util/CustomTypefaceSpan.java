@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -215,7 +215,7 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
 
   private void apply (final TextPaint paint) {
     paint.setFakeBoldText((flags & FLAG_FAKE_BOLD) != 0);
-    if (BitwiseUtils.getFlag(flags, FLAG_NEED_REVEAL_ON_TAP)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_NEED_REVEAL_ON_TAP)) {
       // TODO paint.bgColor = ...;
     }
     if (backgroundColorId != 0) {

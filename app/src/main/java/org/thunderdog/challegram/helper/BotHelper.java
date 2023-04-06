@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -193,9 +193,6 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
   }
 
   @Override
-  public void onUserUpdated (TdApi.User user) { }
-
-  @Override
   public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
     processUserFull(userFull);
   }
@@ -339,18 +336,26 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
     }
     switch (markup.getConstructor()) {
       case TdApi.ReplyMarkupRemoveKeyboard.CONSTRUCTOR: {
-        processHideKeyboard(messageId, ((TdApi.ReplyMarkupRemoveKeyboard) markup).isPersonal);
+        TdApi.ReplyMarkupRemoveKeyboard removeKeyboard = (TdApi.ReplyMarkupRemoveKeyboard) markup;
+        processHideKeyboard(messageId, removeKeyboard.isPersonal);
         break;
       }
       case TdApi.ReplyMarkupForceReply.CONSTRUCTOR: {
-        processForceReply(message, ((TdApi.ReplyMarkupForceReply) markup).isPersonal);
+        TdApi.ReplyMarkupForceReply forceReply = (TdApi.ReplyMarkupForceReply) markup;
+        processForceReply(message, forceReply.isPersonal);
+        context.setCustomBotPlaceholder(forceReply.inputFieldPlaceholder);
         break;
       }
       case TdApi.ReplyMarkupShowKeyboard.CONSTRUCTOR: {
-        processShowKeyboard(messageId, (TdApi.ReplyMarkupShowKeyboard) markup);
+        TdApi.ReplyMarkupShowKeyboard showKeyboard = (TdApi.ReplyMarkupShowKeyboard) markup;
+        processShowKeyboard(messageId, showKeyboard);
         if (type == TYPE_GROUP || type == TYPE_SUPERGROUP) {
           context.showReply(message, false, false); // FIXME?
         }
+        context.setCustomBotPlaceholder(showKeyboard.inputFieldPlaceholder);
+        break;
+      }
+      case TdApi.ReplyMarkupInlineKeyboard.CONSTRUCTOR: {
         break;
       }
     }

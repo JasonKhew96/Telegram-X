@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ public class VideoData {
             long firstSampleTime = extractor.getSampleTime();
             if (extractor.advance()) {
               long nextSampleTime = extractor.getSampleTime();
-              if (!BitwiseUtils.getFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
+              if (!BitwiseUtils.hasFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
                 extractor.seekTo(nextSampleTime, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 nextSampleTime = extractor.getSampleTime();
               }
@@ -435,7 +435,7 @@ public class VideoData {
               long nextSampleTime = extractor.getSampleTime();
               if (nextSampleTime == -1)
                 return accurateDuration;
-              if (!BitwiseUtils.getFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
+              if (!BitwiseUtils.hasFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
                 extractor.seekTo(nextSampleTime, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 nextSampleTime = extractor.getSampleTime();
                 if (nextSampleTime == -1)

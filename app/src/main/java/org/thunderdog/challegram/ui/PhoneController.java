@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ import org.thunderdog.challegram.tool.TGPhoneFormat;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -910,86 +911,82 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         function = new TdApi.ImportContacts(new TdApi.Contact[] {new TdApi.Contact(phone, getFirstName(), getLastName(), null, 0)});
         break;
       case MODE_CHANGE_NUMBER:
-        function = new TdApi.ChangePhoneNumber(phone, TD.defaultPhoneNumberAuthenticationSettings());
+        function = new TdApi.ChangePhoneNumber(phone, tdlib.phoneNumberAuthenticationSettings(context));
         break;
       case MODE_LOGIN:
-        function = new TdApi.SetAuthenticationPhoneNumber(phone, TD.defaultPhoneNumberAuthenticationSettings());
+        function = new TdApi.SetAuthenticationPhoneNumber(phone, tdlib.phoneNumberAuthenticationSettings(context));
         tdlib.setAuthPhoneNumber(phoneCode, phoneNumber);
         break;
       default:
         throw new IllegalArgumentException("mode == " + mode);
     }
-    RunnableBool act = (tokenVerified) -> tdlib.client().send(function, object -> runOnUiThreadOptional(() -> {
-      setInProgress(false);
-      switch (object.getConstructor()) {
-        case TdApi.Ok.CONSTRUCTOR: {
-          break;
-        }
-        case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
-          PasswordController passwordController = new PasswordController(context, tdlib);
-          passwordController.setArguments(new PasswordController.Args(PasswordController.MODE_CODE_CHANGE, (TdApi.AuthenticationCodeInfo) object, Strings.formatPhone(phone)));
-          navigateTo(passwordController);
-          break;
-        }
-        case TdApi.ImportedContacts.CONSTRUCTOR: {
-          if (mode == MODE_ADD_CONTACT) {
-            final TdApi.ImportedContacts contacts = (TdApi.ImportedContacts) object;
-            final long[] userIds = contacts.userIds;
-            runOnUiThreadOptional(() -> {
-              setInProgress(false);
-              if (userIds.length == 1) {
-                if (userIds[0] == 0) {
-                  suggestInvitingUser(userIds[0], contacts.importerCount[0]);
-                } else {
-                  UI.showToast(R.string.ContactAdded, Toast.LENGTH_SHORT);
-                  if (StringUtils.isEmpty(initialPhoneNumber)) {
-                    tdlib.ui().openPrivateChat(PhoneController.this, userIds[0], null);
+    RunnableBool act = (tokenVerified) -> tdlib.awaitReadyOrWaitingForData(() -> {
+      tdlib.client().send(function, object -> runOnUiThreadOptional(() -> {
+        setInProgress(false);
+        switch (object.getConstructor()) {
+          case TdApi.Ok.CONSTRUCTOR: {
+            break;
+          }
+          case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
+            PasswordController passwordController = new PasswordController(context, tdlib);
+            passwordController.setArguments(new PasswordController.Args(PasswordController.MODE_CODE_CHANGE, (TdApi.AuthenticationCodeInfo) object, Strings.formatPhone(phone)));
+            navigateTo(passwordController);
+            break;
+          }
+          case TdApi.ImportedContacts.CONSTRUCTOR: {
+            if (mode == MODE_ADD_CONTACT) {
+              final TdApi.ImportedContacts contacts = (TdApi.ImportedContacts) object;
+              final long[] userIds = contacts.userIds;
+              runOnUiThreadOptional(() -> {
+                setInProgress(false);
+                if (userIds.length == 1) {
+                  if (userIds[0] == 0) {
+                    suggestInvitingUser(userIds[0], contacts.importerCount[0]);
                   } else {
-                    navigateBack();
+                    UI.showToast(R.string.ContactAdded, Toast.LENGTH_SHORT);
+                    if (StringUtils.isEmpty(initialPhoneNumber)) {
+                      tdlib.ui().openPrivateChat(PhoneController.this, userIds[0], null);
+                    } else {
+                      navigateBack();
+                    }
+                  }
+                }
+              });
+            }
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            HelpInfo help = handleRichError(phone, (TdApi.Error) object);
+            if (help != null) {
+              CharSequence message = Lang.getMarkdownString(this, help.info, TD.toErrorString(help.error));
+              if (message instanceof Spannable) {
+                CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
+                for (CustomTypefaceSpan span : spans) {
+                  if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
+                    span.setTypeface(null);
+                    span.setColorId(R.id.theme_color_textLink);
+                    span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
+                    int start = ((Spannable) message).getSpanStart(span);
+                    int end = ((Spannable) message).getSpanEnd(span);
+                    ((Spannable) message).setSpan(new NoUnderlineClickableSpan() {
+                      @Override
+                      public void onClick (@NonNull View widget) {
+                        Intents.sendEmail(help.email, help.subject, help.text);
+                      }
+                    }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    break;
                   }
                 }
               }
-            });
-          }
-          break;
-        }
-        case TdApi.Error.CONSTRUCTOR: {
-          HelpInfo help = handleRichError(phone, (TdApi.Error) object);
-          if (help != null) {
-            CharSequence message = Lang.getMarkdownString(this, help.info, TD.toErrorString(help.error));
-            if (message instanceof Spannable) {
-              CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
-              for (CustomTypefaceSpan span : spans) {
-                if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
-                  span.setTypeface(null);
-                  span.setColorId(R.id.theme_color_textLink);
-                  span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
-                  int start = ((Spannable) message).getSpanStart(span);
-                  int end = ((Spannable) message).getSpanEnd(span);
-                  ((Spannable) message).setSpan(new ClickableSpan() {
-                    @Override
-                    public void onClick (@NonNull View widget) {
-                      Intents.sendEmail(help.email, help.subject, help.text);
-                    }
-
-                    @Override
-                    public void updateDrawState (@NonNull TextPaint ds) {
-                      super.updateDrawState(ds);
-                      ds.setUnderlineText(false);
-                    }
-                  }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                  break;
-                }
-              }
+              showError(message);
+            } else {
+              showError(TD.toErrorString(object));
             }
-            showError(message);
-          } else {
-            showError(TD.toErrorString(object));
+            break;
           }
-          break;
         }
-      }
-    }));
+      }));
+    });
     if (mode == MODE_LOGIN) {
       tdlib.context().checkDeviceToken(0, tokenVerified -> {
         tdlib.checkConnectionParams();

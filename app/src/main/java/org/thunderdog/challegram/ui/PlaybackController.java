@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -768,13 +768,19 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     ListItem footerItem = tracks.get(tracks.size() - 1);
     int prevSize = tracks.size() - 2;
 
+    canRestoreList = false;
+
     tracks.clear();
     ArrayUtils.ensureCapacity(tracks, trackList.size() + 1);
 
     tracks.add(headerItem);
     int foundIndex = buildList(tracks, tdlib, currentTrack, trackList, playListChatId, playFlags);
     if (foundIndex == -1) {
-      throw new IllegalStateException();
+      if (isAttachedToNavigationController()) {
+        throw new IllegalStateException();
+      }
+      context.navigation().getStack().destroy(this);
+      return;
     }
     tracks.add(footerItem);
 

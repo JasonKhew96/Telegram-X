@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ import org.thunderdog.challegram.data.TGChat;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
-import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.ContentFrameLayout;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
@@ -73,6 +72,7 @@ import org.thunderdog.challegram.telegram.ChatFilter;
 import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.ConnectionState;
 import org.thunderdog.challegram.telegram.CounterChangeListener;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
@@ -113,13 +113,13 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
@@ -955,11 +955,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   public void updateNetworkStatus (int state) {
-    if (state == Tdlib.STATE_CONNECTED) {
+    if (state == ConnectionState.CONNECTED) {
       shareIntentIfReady();
       setName(getHeaderText());
     } else {
-      setName(TdlibUi.stringForConnectionState(state));
+      setName(tdlib.connectionStateText());
     }
   }
 
@@ -1240,7 +1240,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
           }
         }
         if ((cloudPinCount + secretPinCount) == 1 && tdlib.chatPinned(chatList, lastChatId)) {
-          tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, R.id.btn_pinUnpinChat, this::onSelectionActionComplete);
+          tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), R.id.btn_pinUnpinChat,
+          this::onSelectionActionComplete);
           return;
         }
         if (cloudPinCount > 0 || secretPinCount > 0) {
@@ -1436,7 +1437,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
     }
     if (count == 1) {
-      tdlib.ui().processChatAction(this, chatList(), lastChatId, null, clearHistory ? R.id.btn_clearChatHistory : R.id.btn_removeChatFromList, this::onSelectionActionComplete);
+      tdlib.ui().processChatAction(this, chatList(), lastChatId, null, new TdApi.MessageSourceChatList(), clearHistory ? R.id.btn_clearChatHistory : R.id.btn_removeChatFromList, this::onSelectionActionComplete);
       return;
     }
 
@@ -1602,7 +1603,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               return;
           }
           if (simpleActionId != 0) {
-            tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, simpleActionId, onDone);
+            tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), simpleActionId, onDone);
             return;
           }
         }
@@ -1677,7 +1678,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             for (int i = 0; i < selectedChats.size(); i++) {
               switch (id) {
                 case R.id.more_btn_markAsRead:
-                  tdlib.markChatAsRead(selectedChats.keyAt(i), 0, after);
+                  tdlib.markChatAsRead(selectedChats.keyAt(i), new TdApi.MessageSourceChatList(), true, after);
                   break;
                 case R.id.more_btn_markAsUnread:
                   tdlib.markChatAsUnread(selectedChats.valueAt(i), after);
@@ -2074,7 +2075,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       };
     }
 
-    return tdlib.ui().createSimpleChatActions(this, ((BaseView) v).getPreviewChatList(), ((BaseView) v).getPreviewChatId(), null, ids, icons, strings, getSelectedChatCount() == 0, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
+    return tdlib.ui().createSimpleChatActions(this, ((BaseView) v).getPreviewChatList(), ((BaseView) v).getPreviewChatId(), null, new TdApi.MessageSourceChatList(), ids, icons, strings, getSelectedChatCount() == 0, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
   }
 
   @Override
@@ -2098,7 +2099,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               tdlib.ui().showArchiveOptions(this, tdlib.chatList(ChatPosition.CHAT_LIST_ARCHIVE));
             }
           } else {
-            tdlib.ui().showChatOptions(this, chatList(), chat.getChatId(), null, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
+            tdlib.ui().showChatOptions(this, chatList(), chat.getChatId(), null, new TdApi.MessageSourceChatList(), canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
           }
           return true;
         }
@@ -2505,7 +2506,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) {
     runOnUiThreadOptional(() -> {
-      if (BitwiseUtils.getFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
+      if (BitwiseUtils.hasFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
         checkListState();
       }
     });
@@ -2728,6 +2729,16 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onConnectionStateChanged (int newState, int oldState) {
     runOnUiThreadOptional(() -> updateNetworkStatus(newState));
+  }
+
+  @Override
+  public void onConnectionDisplayStatusChanged () {
+    int connectionState = tdlib.connectionState();
+    if (connectionState != ConnectionState.CONNECTED) {
+      runOnUiThreadOptional(() -> {
+        updateNetworkStatus(connectionState);
+      });
+    }
   }
 
   // Setting updates

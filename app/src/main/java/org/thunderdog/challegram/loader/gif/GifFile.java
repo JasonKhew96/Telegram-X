@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -216,7 +216,7 @@ public class GifFile {
   }
 
   public boolean isPlayOnce () {
-    return BitwiseUtils.getFlag(flags, FLAG_PLAY_ONCE);
+    return BitwiseUtils.hasFlag(flags, FLAG_PLAY_ONCE);
   }
 
   public void setDecodeLastFrame (boolean decodeLastFrame) {
@@ -250,7 +250,7 @@ public class GifFile {
   }
 
   public boolean needDecodeLastFrame () {
-    return BitwiseUtils.getFlag(flags, FLAG_DECODE_LAST_FRAME);
+    return BitwiseUtils.hasFlag(flags, FLAG_DECODE_LAST_FRAME);
   }
 
   public boolean hasLooped () {
@@ -262,7 +262,7 @@ public class GifFile {
   }
 
   public boolean isUnique () {
-    return BitwiseUtils.getFlag(flags, FLAG_UNIQUE);
+    return BitwiseUtils.hasFlag(flags, FLAG_UNIQUE);
   }
 
   public boolean isStill () {

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -170,8 +170,8 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
 
   @Override
   public boolean canSlideBackFrom(NavigationController navigationController, float originalX, float originalY) {
-    float x = originalX - (Views.getLocationInWindow(getRecyclerView())[0] - Views.getLocationInWindow(navigationController.get())[0]);
-    float y = originalY - (Views.getLocationInWindow(getRecyclerView())[1] - Views.getLocationInWindow(navigationController.get())[1]);
+    float x = originalX - (Views.getLocationInWindow(getRecyclerView())[0] - Views.getLocationInWindow(navigationController.getValue())[0]);
+    float y = originalY - (Views.getLocationInWindow(getRecyclerView())[1] - Views.getLocationInWindow(navigationController.getValue())[1]);
     if (x >= 0 && y >= 0 && x < getRecyclerView().getMeasuredWidth() && y < getRecyclerView().getMeasuredHeight()) {
       View view = getRecyclerView().findChildViewUnder(x, y);
       if (view instanceof RecyclerView) {

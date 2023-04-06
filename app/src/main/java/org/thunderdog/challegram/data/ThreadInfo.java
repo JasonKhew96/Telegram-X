@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -360,7 +360,7 @@ public class ThreadInfo {
           int newIndex = 0;
           for (int index = 0; index < messageCount; index++) {
             TdApi.Message message = threadInfo.messages[index];
-            if (!BitwiseUtils.getFlag(deleted, 1 << index)) {
+            if (!BitwiseUtils.hasFlag(deleted, 1 << index)) {
               newMessages[newIndex++] = message;
             } else if (message.canGetMessageThread) {
               isMessageThreadDeleted = true;

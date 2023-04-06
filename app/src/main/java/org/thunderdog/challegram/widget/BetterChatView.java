@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -379,7 +379,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
         subtitleLeft += Screen.dp(20f);
       }
       int subtitleTop = Screen.dp(39f) + subtitleOffset;
-      TextColorSet colorSet = BitwiseUtils.getFlag(flags, FLAG_ONLINE) ? TextColorSets.Regular.NEUTRAL : null;
+      TextColorSet colorSet = BitwiseUtils.hasFlag(flags, FLAG_ONLINE) ? TextColorSets.Regular.NEUTRAL : null;
       displaySubtitle.draw(c, subtitleLeft, subtitleTop,  colorSet, 1f, subtitleMediaReceiver);
     }
     if (subtitleIcon != 0) {

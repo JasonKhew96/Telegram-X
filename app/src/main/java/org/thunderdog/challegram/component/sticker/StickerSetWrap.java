@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
-import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -473,7 +471,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
   private void addViews () {
     headerView.initWithSingleController(stickersController, false);
-    addView(stickersController.get());
+    addView(stickersController.getValue());
     addView(topShadow);
     if (topLick != null) {
       addView(topLick);

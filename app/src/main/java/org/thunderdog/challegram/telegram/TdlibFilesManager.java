@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
 import me.vkryl.core.reference.ReferenceList;
@@ -528,6 +529,13 @@ public class TdlibFilesManager implements GlobalConnectionListener {
 
   public void downloadFile (@NonNull TdApi.File file) {
     downloadFile(file, DEFAULT_DOWNLOAD_PRIORITY, 0, 0, null);
+  }
+
+  public void isFileLoadedAndExists (TdApi.File file, RunnableBool after) {
+    tdlib.runOnTdlibThread(() -> {
+      boolean loadedAndExists = TD.isFileLoadedAndExists(file);
+      after.runWithBool(loadedAndExists);
+    });
   }
 
   public static final int DEFAULT_DOWNLOAD_PRIORITY = 1;

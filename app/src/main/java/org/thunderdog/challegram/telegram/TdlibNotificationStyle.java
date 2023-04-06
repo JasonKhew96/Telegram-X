@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -276,7 +277,17 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     String channelId;
     String rShortcutId = null;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      android.app.NotificationChannel channel = (android.app.NotificationChannel) tdlib.notifications().getSystemChannel(group);
+      android.app.NotificationChannel channel;
+      try {
+        channel = (android.app.NotificationChannel) tdlib.notifications().getSystemChannel(group);
+      } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+        TDLib.Tag.notifications("Unable to get notification channel for group.id %d:\n%s",
+          group.getId(),
+          Log.toString(e)
+        );
+        tdlib.settings().trackNotificationChannelProblem(e, group.getChatId());
+        channel = null;
+      }
       if (channel == null) {
         group.markAsHidden(TdlibNotificationGroup.HIDE_REASON_DISABLED_CHANNEL);
         return DISPLAY_STATE_FAIL;
@@ -319,7 +330,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     // Notification itself
 
     final boolean needPreview = helper.needPreview(group);
-    final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.hasWritePermission(chat) && !group.isOnlyScheduled();
+    final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.canSendBasicMessage(chat) && !group.isOnlyScheduled();
     final boolean needReplyToMessage = needReply && canReplyTo(group) && (!ChatId.isPrivate(chatId) || (singleNotification != null && chat.unreadCount > 1));
     final long[] allMessageIds = group.getAllMessageIds();
     final long[] allUserIds = group.isMention() ? group.getAllUserIds() : null;
@@ -1002,7 +1013,15 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     int displayingMessageCount = helper.calculateMessageCount(category);
     long timeMs = TimeUnit.SECONDS.toMillis(lastNotification.notification().date);
 
-    NotificationCompat.Builder b = new NotificationCompat.Builder(context, helper.findCommonChannelId(category));
+    String commonChannelId;
+    try {
+      commonChannelId = helper.findCommonChannelId(category);
+    } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+      TDLib.Tag.notifications("Unable to create common notification channel:\n%s", Log.toString(e));
+      tdlib.settings().trackNotificationChannelProblem(e, 0);
+      return null;
+    }
+    NotificationCompat.Builder b = new NotificationCompat.Builder(context, commonChannelId);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       if (allowPreview) {
         b.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN);

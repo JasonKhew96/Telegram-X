@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,8 @@
 package org.thunderdog.challegram.telegram;
 
 public interface GlobalConnectionListener {
-  void onConnectionStateChanged (Tdlib tdlib, @ConnectionState int newState, boolean isCurrent);
-  void onConnectionTypeChanged (int oldType, int newType);
-  void onSystemDataSaverStateChanged (boolean isEnabled);
+  default void onConnectionStateChanged (Tdlib tdlib, @ConnectionState int newState, boolean isCurrent) { }
+  default void onConnectionTypeChanged (int oldType, int newType) { }
+  default void onSystemDataSaverStateChanged (boolean isEnabled) { }
+  default void onConnectionDisplayStatusChanged (Tdlib tdlib, boolean isCurrent) { }
 }

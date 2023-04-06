@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -186,7 +186,7 @@ public class HashtagChatController extends ViewPagerController<HashtagChatContro
     float totalFactor = (float) actualPosition + positionOffset;
     View v1 = headerCell.getChildAt(0);
     View v2 = headerCell.getChildAt(1);
-    float distance = (float) get().getMeasuredWidth() * .14f /*HeaderView.TRANSLATION_FACTOR*/;
+    float distance = (float) getValue().getMeasuredWidth() * .14f /*HeaderView.TRANSLATION_FACTOR*/;
     v1.setTranslationX(totalFactor == 1f ? 0 : -distance * totalFactor);
     v1.setAlpha(1f - totalFactor);
     if (v2 != null) {

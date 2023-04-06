@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -240,7 +240,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private FactorAnimator timeExpandValue = new FactorAnimator(0, new FactorAnimator.Target() {
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      if (BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
         if (useBubbles() && !useReactionBubbles()) {
           int height = getHeight();
           buildBubble(false);
@@ -330,7 +330,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       @Override
       public void onRebuildRequested () {
         runOnUiThreadOptional(() -> {
-          updateInteractionInfo(true);
+          if (isLayoutBuilt()) {
+            updateInteractionInfo(true);
+          }
         });
       }
     });
@@ -454,7 +456,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       loadReply();
     }
 
-    if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
+    if (isHot() && needHotTimer() && msg.selfDestructIn < msg.selfDestructTime) {
       startHotTimer(false);
     }
 
@@ -820,7 +822,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (useForward() && !msg.isChannelPost && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR) {
         return VIEW_COUNT_FORWARD;
       }
-      if (useBubbles() || BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED)) {
+      if (useBubbles() || BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED)) {
         return VIEW_COUNT_MAIN;
       }
     }
@@ -1927,7 +1929,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!useBubbles) {
       // Plain mode time part
 
-      boolean needMetadata = BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED);
+      boolean needMetadata = BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED);
       int top = getHeaderPadding() + xViewsOffset + Screen.dp(7f);
 
       // Time
@@ -2430,11 +2432,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
    * @return false, when layout must be updated immediately
    */
   protected final boolean needAnimateChanges () {
-    return hasAnyTargetToInvalidate() && controller().getParentOrSelf().isAttachedToNavigationController() && BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT) && UI.inUiThread();
+    return hasAnyTargetToInvalidate() && controller().getParentOrSelf().isAttachedToNavigationController() && BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && UI.inUiThread();
   }
 
   public final boolean isLayoutBuilt () {
-    return BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT);
+    return BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT);
   }
 
   public final void invalidate () {
@@ -2840,7 +2842,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final boolean forceForwardedInfo () {
     return msg.forwardInfo != null && !isOutgoing() && (
-      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) ||
+      BitwiseUtils.hasFlag(flags, FLAG_SELF_CHAT) ||
       (isChannelAutoForward() && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
         msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId) ||
       msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR ||
@@ -4095,50 +4097,44 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
   }
 
-  public final void getIds (@NonNull LongList ids, long afterMessageId, long beforeMessageId) {
+  protected boolean isFakeMessage () {
+    //noinspection WrongConstant
+    if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
+      return true;
+    }
+    return isSponsored() || isDemoChat();
+  }
+
+  public final void getIds (@NonNull LongSet ids, long afterMessageId, long beforeMessageId) {
+    if (isFakeMessage()) {
+      return;
+    }
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        ids.ensureCapacity(ids.size() + combinedMessages.size());
         for (TdApi.Message msg : combinedMessages) {
-          if (msg.id > afterMessageId && msg.id < beforeMessageId) {
-            ids.append(msg.id);
+          if (msg.id != 0 && ((afterMessageId == 0 && beforeMessageId == 0) || (msg.id > afterMessageId && msg.id < beforeMessageId))) {
+            ids.add(msg.id);
           }
         }
         return;
       }
     }
-    if (msg.id > afterMessageId && msg.id < beforeMessageId) {
-      ids.append(msg.id);
+    if (msg.id != 0 && ((afterMessageId == 0 && beforeMessageId == 0) || (msg.id > afterMessageId && msg.id < beforeMessageId))) {
+      ids.add(msg.id);
     }
   }
 
   public final void getIds (@NonNull LongSet ids) {
-    synchronized (this) {
-      if (combinedMessages != null && !combinedMessages.isEmpty()) {
-        ids.ensureCapacity(ids.size() + combinedMessages.size());
-        for (TdApi.Message msg : combinedMessages) {
-          ids.add(msg.id);
-        }
-        return;
-      }
-    }
-    ids.add(msg.id);
+    getIds(ids, 0, 0);
   }
 
   public final long[] getIds () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        long[] ids = new long[combinedMessages.size()];
-        int i = 0;
-        for (TdApi.Message msg : combinedMessages) {
-          ids[i] = msg.id;
-          i++;
-        }
-        Arrays.sort(ids);
-        return ids;
-      } else {
-        return new long[] {msg.id};
-      }
-    }
+    LongSet ids = new LongSet(getMessageCount());
+    getIds(ids, 0, 0);
+    long[] result = ids.toArray();
+    Arrays.sort(result);
+    return result;
   }
 
   public final boolean isMessageThreadRoot () {
@@ -4274,7 +4270,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || isSponsored()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.selfDestructTime != message.selfDestructTime || isHot() || isEventLog() || isSponsored()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -4684,7 +4680,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean isBeingAdded () {
-    return BitwiseUtils.getFlag(flags, FLAG_BEING_ADDED);
+    return BitwiseUtils.hasFlag(flags, FLAG_BEING_ADDED);
   }
 
   public boolean canMarkAsViewed () {
@@ -4702,7 +4698,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       result = true;
     }
     if (containsUnreadReactions()) {
-      if (!BitwiseUtils.getFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
         highlightUnreadReactions();
         highlight(true);
         tdlib.ui().postDelayed(() -> {
@@ -4917,7 +4913,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected boolean shouldHideMedia () {
-    return BitwiseUtils.getFlag(flags, FLAG_HIDE_MEDIA);
+    return BitwiseUtils.hasFlag(flags, FLAG_HIDE_MEDIA);
   }
 
   public final void setMediaVisible (MediaItem media, boolean isVisible) {
@@ -4979,7 +4975,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isHotDone () {
-    return isOutgoing() && msg.ttlExpiresIn < msg.ttl;
+    return isOutgoing() && msg.selfDestructIn < msg.selfDestructTime;
   }
 
   protected boolean needHotTimer () {
@@ -5046,26 +5042,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private void checkHotTimer () {
     long now = System.currentTimeMillis();
     long elapsed = now - hotTimerStart;
-    double prevTtl = msg.ttlExpiresIn;
+    double prevTtl = msg.selfDestructIn;
     hotTimerStart = now;
-    msg.ttlExpiresIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
-    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.ttlExpiresIn);
+    msg.selfDestructIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
+    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.selfDestructIn);
     onHotInvalidate(secondsChanged);
     if (hotListener != null) {
       hotListener.onHotInvalidate(secondsChanged);
     }
-    if (needHotTimer() && hotTimerStart != 0 && msg.ttlExpiresIn > 0) {
+    if (needHotTimer() && hotTimerStart != 0 && msg.selfDestructIn > 0) {
       HotHandler hotHandler = getHotHandler();
       hotHandler.sendMessageDelayed(Message.obtain(hotHandler, HotHandler.MSG_HOT_CHECK, this), HOT_CHECK_DELAY);
     }
   }
 
   public float getHotExpiresFactor () {
-    return (float) (msg.ttlExpiresIn / msg.ttl);
+    return (float) (msg.selfDestructIn / msg.selfDestructTime);
   }
 
   public String getHotTimerText () {
-    return TdlibUi.getDuration((int) Math.round(msg.ttlExpiresIn), TimeUnit.SECONDS, false);
+    return TdlibUi.getDuration((int) Math.round(msg.selfDestructIn), TimeUnit.SECONDS, false);
   }
 
   public interface HotListener {
@@ -5465,7 +5461,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     flags = BitwiseUtils.setFlag(flags, MESSAGE_FLAG_FIRST_UNREAD, show);
     updateShowBadge();
     updateBadgeText();
-    if (BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
       rebuildLayout();
       requestLayout();
       invalidate();
@@ -5473,7 +5469,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean hasBadge () {
-    return BitwiseUtils.getFlag(flags, FLAG_SHOW_BADGE);
+    return BitwiseUtils.hasFlag(flags, FLAG_SHOW_BADGE);
   }
 
   public boolean hasUnreadBadge () {
@@ -5481,11 +5477,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isFirstUnread () {
-    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_FIRST_UNREAD);
+    return BitwiseUtils.hasFlag(flags, MESSAGE_FLAG_FIRST_UNREAD);
   }
 
   public boolean isBelowHeader () {
-    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_BELOW_HEADER);
+    return BitwiseUtils.hasFlag(flags, MESSAGE_FLAG_BELOW_HEADER);
   }
 
   private boolean isBottomMessage () {
@@ -5967,7 +5963,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @Override
   public void onCounterAppearanceChanged (Counter counter, boolean sizeChanged) {
-    if (sizeChanged && BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+    if (sizeChanged && BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
       if (counter == viewCounter) {
         switch (getViewCountMode()) {
           case VIEW_COUNT_FORWARD:
@@ -6630,7 +6626,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean isThreadHeader () {
-    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_IS_THREAD_HEADER);
+    return BitwiseUtils.hasFlag(flags, MESSAGE_FLAG_IS_THREAD_HEADER);
   }
 
   protected String footerTitle;
@@ -7361,13 +7357,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
         }
         case TdApi.MessagePhoto.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessagePhoto) content).photo), ((TdApi.MessagePhoto) content).caption);
+          TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) content;
+          return new TGMessageMedia(context, msg, messagePhoto, messagePhoto.caption);
         }
         case TdApi.MessageVideo.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageVideo) content).video), ((TdApi.MessageVideo) content).caption);
+          TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) content;
+          return new TGMessageMedia(context, msg, messageVideo, messageVideo.caption);
         }
         case TdApi.MessageAnimation.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageAnimation) content).animation), ((TdApi.MessageAnimation) content).caption);
+          TdApi.MessageAnimation messageAnimation = (TdApi.MessageAnimation) content;
+          return new TGMessageMedia(context, msg, messageAnimation, messageAnimation.caption);
         }
         case TdApi.MessageVideoNote.CONSTRUCTOR: {
           return new TGMessageVideo(context, msg, nonNull(((TdApi.MessageVideoNote) content).videoNote), ((TdApi.MessageVideoNote) content).isViewed);
@@ -7417,8 +7416,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatSetTheme) content);
         }
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
-          return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatSetMessageAutoDeleteTime) content);
         }
         case TdApi.MessageGameScore.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
@@ -7615,7 +7614,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   //
 
   public final void checkAvailableReactions (Runnable after) {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 5), result -> {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 25), result -> {
       switch (result.getConstructor()) {
         case TdApi.AvailableReactions.CONSTRUCTOR: {
           TdApi.AvailableReactions availableReactions = (TdApi.AvailableReactions) result;
@@ -7707,6 +7706,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public void runOnUiThread (Runnable act) {
     tdlib.ui().post(act);
+  }
+
+  public void runOnUiThread (Runnable act, long delayMillis) {
+    tdlib.ui().postDelayed(act, delayMillis);
   }
 
   public void runOnUiThreadOptional (Runnable act) {
@@ -7886,7 +7889,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return REACTIONS_DRAW_MODE_BUBBLE;
     }
 
-    boolean headerEnabled = BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED);
+    boolean headerEnabled = BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED);
     boolean isUserChat = tdlib.isUserChat(getChatId());
 
     if (!useBubbles() && (isChannel() || (!headerEnabled && !isUserChat))) {
@@ -8193,7 +8196,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       tdlib.pickRandomGenericOverlaySticker(sticker -> {
         if (sticker != null) {
-          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.type)
+          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.fullType)
             .setReactionType(tgReaction.type);
           executeOnUiThreadOptional(() ->
             act.runWithData(genericOverlaySticker)

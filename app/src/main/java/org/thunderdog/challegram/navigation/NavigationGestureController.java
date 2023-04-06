@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -151,7 +151,7 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
     if (listenSlidingBack && drawer != null && drawer.isVisible()) {
       boolean ok;
       if (Lang.rtl()) {
-        ok = event.getX() < navigation.get().getMeasuredWidth() - drawer.getWidth() + drawer.getShadowWidth();
+        ok = event.getX() < navigation.getValue().getMeasuredWidth() - drawer.getWidth() + drawer.getShadowWidth();
       } else {
         ok = event.getX() >= drawer.getWidth();
       }
@@ -162,9 +162,9 @@ public class NavigationGestureController implements GestureDetector.OnGestureLis
       boolean close;
 
       if (slidingVertical) {
-        close = lastScrollY < (float) navigation.get().getMeasuredHeight() * Size.NAVIGATION_DROP_FACTOR;
+        close = lastScrollY < (float) navigation.getValue().getMeasuredHeight() * Size.NAVIGATION_DROP_FACTOR;
       } else {
-        close = lastScrollX < (float) navigation.get().getMeasuredWidth() * Size.NAVIGATION_DROP_FACTOR;
+        close = lastScrollX < (float) navigation.getValue().getMeasuredWidth() * Size.NAVIGATION_DROP_FACTOR;
       }
 
       if (close) {
