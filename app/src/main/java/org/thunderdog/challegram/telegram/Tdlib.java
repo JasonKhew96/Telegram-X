@@ -3226,10 +3226,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public TdApi.ChatFilterInfo chatFilterInfo (int chatFilterId) {
+  public TdApi.ChatFolderInfo chatFilterInfo (int chatFilterId) {
     synchronized (dataLock) {
-      if (chatFilters != null) {
-        for (TdApi.ChatFilterInfo filter : chatFilters) {
+      if (chatFolders != null) {
+        for (TdApi.ChatFolderInfo filter : chatFolders) {
           if (filter.id == chatFilterId)
             return filter;
         }
@@ -3246,7 +3246,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatListMain.CONSTRUCTOR:
         case TdApi.ChatListArchive.CONSTRUCTOR:
           break;
-        case TdApi.ChatListFilter.CONSTRUCTOR:
+        case TdApi.ChatListFolder.CONSTRUCTOR:
           return false;
       }
     }
@@ -3258,7 +3258,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             return !isSelfChat(chat.id) && !isServiceNotificationsChat(chat.id);
           case TdApi.ChatListArchive.CONSTRUCTOR:
             return true; // Already archived
-          case TdApi.ChatListFilter.CONSTRUCTOR:
+          case TdApi.ChatListFolder.CONSTRUCTOR:
             break;
         }
       }
@@ -7526,12 +7526,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     listeners.updateChatAvailableReactions(update);
   }
 
-  private TdApi.ChatFilterInfo[] chatFilters;
+  private TdApi.ChatFolderInfo[] chatFolders;
 
   @TdlibThread
-  private void updateChatFilters (TdApi.UpdateChatFilters update) {
+  private void updateChatFilters (TdApi.UpdateChatFolders update) {
     synchronized (dataLock) {
-      this.chatFilters = update.chatFilters;
+      this.chatFolders = update.chatFolders;
     }
     listeners.updateChatFilters(update);
   }
@@ -7927,6 +7927,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     listeners.updatePrivacySettingRules(update.setting, update.rules);
   }
 
+  // Updates: ADD MEMBERS PRIVACY
+
+  @TdlibThread
+  private void updateAddChatMembersPrivacyForbidden (TdApi.UpdateAddChatMembersPrivacyForbidden update) {
+    // TODO show alert
+  }
+
   // Updates: CHAT ACTION
 
   @TdlibThread
@@ -8259,6 +8266,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         chatThemes.put(theme.name, theme);
       }
     }
+  }
+
+  @TdlibThread
+  private void updateChatBackground (TdApi.UpdateChatBackground update) {
+    final TdApi.Chat chat;
+    synchronized (dataLock) {
+      chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.background = update.background;
+    }
+
+    listeners.updateChatBackground(update);
   }
 
   @AnyThread
@@ -8901,8 +8922,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatMessageAutoDeleteTime((TdApi.UpdateChatMessageAutoDeleteTime) update);
         break;
       }
-      case TdApi.UpdateChatFilters.CONSTRUCTOR: {
-        updateChatFilters((TdApi.UpdateChatFilters) update);
+      case TdApi.UpdateChatFolders.CONSTRUCTOR: {
+        updateChatFilters((TdApi.UpdateChatFolders) update);
         break;
       }
       case TdApi.UpdateChatPosition.CONSTRUCTOR: {
@@ -9031,6 +9052,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateUserPrivacySettingRules.CONSTRUCTOR: {
         updatePrivacySettingRules((TdApi.UpdateUserPrivacySettingRules) update);
+        break;
+      }
+      case TdApi.UpdateAddChatMembersPrivacyForbidden.CONSTRUCTOR: {
+        updateAddChatMembersPrivacyForbidden((TdApi.UpdateAddChatMembersPrivacyForbidden) update);
         break;
       }
 
@@ -9183,6 +9208,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatThemes.CONSTRUCTOR: {
         updateChatThemes((TdApi.UpdateChatThemes) update);
+        break;
+      }
+      case TdApi.UpdateChatBackground.CONSTRUCTOR: {
+        updateChatBackground((TdApi.UpdateChatBackground) update);
         break;
       }
 

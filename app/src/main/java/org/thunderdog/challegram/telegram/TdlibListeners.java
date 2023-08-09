@@ -1176,7 +1176,7 @@ public class TdlibListeners {
 
   // updateChatFilters
 
-  private static void updateChatFilters (TdApi.UpdateChatFilters update, @Nullable Iterator<ChatFilterListener> list) {
+  private static void updateChatFilters (TdApi.UpdateChatFolders update, @Nullable Iterator<ChatFilterListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onUpdateChatFilter(update.chatFilters);
@@ -1184,7 +1184,7 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatFilters (TdApi.UpdateChatFilters update) {
+  void updateChatFilters (TdApi.UpdateChatFolders update) {
     updateChatFilters(update, chatFilterListeners.iterator());
   }
 
@@ -1366,6 +1366,21 @@ public class TdlibListeners {
   void updateChatIsMarkedAsUnread (TdApi.UpdateChatIsMarkedAsUnread update) {
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, chatListeners.iterator());
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatBackground
+
+  private static void updateChatBackground (long chatId, @Nullable TdApi.ChatBackground background, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatBackgroundChanged(chatId, background);
+      }
+    }
+  }
+
+  void updateChatBackground (TdApi.UpdateChatBackground update) {
+    updateChatBackground(update.chatId, update.background, chatListeners.iterator());
+    updateChatBackground(update.chatId, update.background, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatIsTranslatable

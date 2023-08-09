@@ -139,6 +139,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
@@ -4122,6 +4123,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     unregisterRaiseListener();
     manager.setParentFocused(false);
 
+    if (translationPopup != null) {
+      translationPopup.hidePopupWindow(true);
+    }
     // closeEmojiKeyboard();
     // Media.instance().stopVoice();
   }
@@ -5487,6 +5491,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji, 0);
           return true;
         }
+        case R.id.btn_copyTranslation:
         case R.id.btn_messageCopy: {
           if (!selectedMessage.canBeSaved()) {
             context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoCopy).hideDelayed();
@@ -5500,7 +5505,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (message == null) {
             message = selectedMessage.getNewestMessage();
           }
-          TdApi.FormattedText text = Td.textOrCaption(message.content);
+          TdApi.FormattedText text = id == R.id.btn_copyTranslation ? selectedMessage.getTranslatedText(): Td.textOrCaption(message.content);
           if (text != null)
             UI.copyText(TD.toCopyText(text), R.string.CopiedText);
           return true;
@@ -5521,6 +5526,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (selectedMessage.canBeForwarded()) {
             shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());
           }
+          return true;
+        }
+        case R.id.btn_chatTranslate: {
+          startTranslateMessages(selectedMessage);
+          return true;
+        }
+        case R.id.btn_chatTranslateOff: {
+          stopTranslateMessages(selectedMessage);
           return true;
         }
         case R.id.btn_saveGif: {
@@ -7406,6 +7419,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void onInlineTranslationChanged (long chatId, long messageId, TdApi.FormattedText text) {
+
+  }
+
   public void onMessagesDeleted (long chatId, long[] messageIds) {
     if (editingMessage != null && editingMessage.chatId == chatId && ArrayUtils.indexOf(messageIds, editingMessage.id) != -1) {
       closeEdit();
@@ -7782,12 +7799,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     final String username = Td.primaryUsername(user);
 
-    if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) { // FIXME rightId.SEND_OTHER_MESSAGES
+    if (switchInline.targetChat.getConstructor() == TdApi.TargetChatCurrent.CONSTRUCTOR && canWriteMessages() && hasWritePermission()) { // FIXME rightId.SEND_OTHER_MESSAGES
       if (inputView != null) {
         inputView.setInput("@" + username + " " + switchInline.query, true, true);
       }
       return;
     }
+
+    // TODO support TargetChatInternalLink
 
     tdlib.ui().switchInline(this, username, switchInline.query, false);
   }
@@ -11618,4 +11637,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
     new TdApi.SearchMessagesFilterAudio(),
     new TdApi.SearchMessagesFilterAnimation()
   };
+
+  // Translate
+
+  TranslationControllerV2.Wrapper translationPopup;
+
+  public void startTranslateMessages (TGMessage message) {
+    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE && !(message instanceof TGMessageBotInfo)) {
+      message.startTranslated();
+    } else {
+      translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
+      translationPopup.setArguments(new TranslationControllerV2.Args(message));
+      translationPopup.setClickCallback(message.clickCallback());
+      translationPopup.setTextColorSet(message.getTextColorSet());
+      translationPopup.show();
+      translationPopup.setDismissListener(popup -> translationPopup = null);
+    }
+  }
+
+  public void stopTranslateMessages (TGMessage message) {
+    message.stopTranslated();
+  }
+
 }

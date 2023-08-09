@@ -407,7 +407,6 @@ public class Log {
     TAG_YOUTUBE,
     TAG_CAMERA,
     TAG_EMOJI,
-
     TAG_TDLIB_FILES,
     TAG_TDLIB_OPTIONS
   };

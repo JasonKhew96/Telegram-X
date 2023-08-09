@@ -1085,6 +1085,7 @@ public class TD {
     return new TdApi.MessageReplyInfo(replyCount, recentReplierIds, lastReadInboxMessageId, lastReadOutboxMessageId, lastMessageId);
   }
 
+  public static final String KEY_PREFIX_FOLDER = "filter";
   public static TdApi.ChatList chatListFromKey (String key) {
     if (StringUtils.isEmpty(key))
       return null;
@@ -1094,8 +1095,8 @@ public class TD {
       case "archive":
         return new TdApi.ChatListArchive();
       default:
-        if (key.startsWith("filter")) {
-          return new TdApi.ChatListFilter(StringUtils.parseInt(key.substring("filter".length())));
+        if (key.startsWith(KEY_PREFIX_FOLDER)) {
+          return new TdApi.ChatListFolder(StringUtils.parseInt(key.substring(KEY_PREFIX_FOLDER.length())));
         }
         break;
     }
@@ -1119,8 +1120,8 @@ public class TD {
         return "main";
       case TdApi.ChatListArchive.CONSTRUCTOR:
         return "archive";
-      case TdApi.ChatListFilter.CONSTRUCTOR:
-        return "filter" + ((TdApi.ChatListFilter) chatList).chatFilterId;
+      case TdApi.ChatListFolder.CONSTRUCTOR:
+        return KEY_PREFIX_FOLDER + ((TdApi.ChatListFolder) chatList).chatFolderId;
     }
     throw new UnsupportedOperationException(chatList.toString());
   }
@@ -5903,6 +5904,10 @@ public class TD {
 
     public ContentPreview (@Nullable Emoji emoji, ContentPreview copy) {
       this(copy.emoji, copy.placeholderText, copy.formattedText, copy.isTranslatable, copy.hideAuthor, emoji);
+    }
+
+    public ContentPreview (@Nullable TdApi.FormattedText text, ContentPreview copy) {
+      this(copy.emoji, copy.placeholderText, text != null ? text: copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
     }
 
     public ContentPreview (@Nullable Emoji emoji, int placeholderText, @Nullable TdApi.FormattedText formattedText, boolean isTranslatable, boolean hideAuthor, @Nullable Emoji parentEmoji) {
