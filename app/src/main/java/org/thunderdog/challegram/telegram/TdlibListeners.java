@@ -1179,7 +1179,7 @@ public class TdlibListeners {
   private static void updateChatFilters (TdApi.UpdateChatFolders update, @Nullable Iterator<ChatFilterListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onUpdateChatFilter(update.chatFilters);
+        list.next().onUpdateChatFilter(update.chatFolders);
       }
     }
   }

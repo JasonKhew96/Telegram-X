@@ -31,28 +31,21 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
   }
 
   @Override public void onClick (View v) {
-    int id = v.getId();
-    switch (id) {
-      case R.id.btn_disableCameraButton:
-        PigeonSettings.instance().toggleDisableCameraButton();
-        adapter.updateValuedSettingById(R.id.btn_disableCameraButton);
-        break;
-      case R.id.btn_disableRecordButton:
-        PigeonSettings.instance().toggleDisableRecordButton();
-        adapter.updateValuedSettingById(R.id.btn_disableRecordButton);
-        break;
-      case R.id.btn_rememberSendOptions:
-        PigeonSettings.instance().toggleRememberSendOptions();
-        adapter.updateValuedSettingById(R.id.btn_rememberSendOptions);
-        break;
-      case R.id.btn_disableStickerTimestamp:
-        PigeonSettings.instance().toggleDisableStickerTimestamp();
-        adapter.updateValuedSettingById(R.id.btn_disableStickerTimestamp);
-        break;
-      case R.id.btn_kofi: {
-        tdlib.ui().openUrl(this, "https://ko-fi.com/jasonkhew96", new TdlibUi.UrlOpenParameters().forceInstantView());
-        break;
-      }
+    final int itemId = v.getId();
+    if (itemId == R.id.btn_disableCameraButton) {
+      PigeonSettings.instance().toggleDisableCameraButton();
+      adapter.updateValuedSettingById(R.id.btn_disableCameraButton);
+    } else if (itemId == R.id.btn_disableRecordButton) {
+      PigeonSettings.instance().toggleDisableRecordButton();
+      adapter.updateValuedSettingById(R.id.btn_disableRecordButton);
+    } else if (itemId == R.id.btn_rememberSendOptions) {
+      PigeonSettings.instance().toggleRememberSendOptions();
+      adapter.updateValuedSettingById(R.id.btn_rememberSendOptions);
+    } else if (itemId == R.id.btn_disableStickerTimestamp) {
+      PigeonSettings.instance().toggleDisableStickerTimestamp();
+      adapter.updateValuedSettingById(R.id.btn_disableStickerTimestamp);
+    } else if (itemId == R.id.btn_kofi) {
+      tdlib.ui().openUrl(this, "https://ko-fi.com/jasonkhew96", new TdlibUi.UrlOpenParameters().forceInstantView());
     }
   }
 
@@ -67,19 +60,15 @@ public class SettingsPigeonController extends RecyclerViewController<Void> imple
     adapter = new SettingsAdapter(this) {
       @Override protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         view.setDrawModifier(item.getDrawModifier());
-        switch (item.getId()) {
-          case R.id.btn_disableCameraButton:
-            view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableCameraButton(), isUpdate);
-            break;
-          case R.id.btn_disableRecordButton:
-            view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableRecordButton(), isUpdate);
-            break;
-          case R.id.btn_rememberSendOptions:
-            view.getToggler().setRadioEnabled(PigeonSettings.instance().isRememberSendOptions(), isUpdate);
-            break;
-          case R.id.btn_disableStickerTimestamp:
-            view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableStickerTimestamp(), isUpdate);
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_disableCameraButton) {
+          view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableCameraButton(), isUpdate);
+        } else if (itemId == R.id.btn_disableRecordButton) {
+          view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableRecordButton(), isUpdate);
+        } else if (itemId == R.id.btn_rememberSendOptions) {
+          view.getToggler().setRadioEnabled(PigeonSettings.instance().isRememberSendOptions(), isUpdate);
+        } else if (itemId == R.id.btn_disableStickerTimestamp) {
+          view.getToggler().setRadioEnabled(PigeonSettings.instance().isDisableStickerTimestamp(), isUpdate);
         }
       }
     };

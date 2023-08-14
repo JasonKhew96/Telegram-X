@@ -2260,8 +2260,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return wallpaperManager;
   }
 
-  public TdApi.ChatFilterInfo[] chatFilters () {
-    return chatFilters;
+  public TdApi.ChatFolderInfo[] chatFilters () {
+    return chatFolders;
   }
 
   public TdlibManager context () {

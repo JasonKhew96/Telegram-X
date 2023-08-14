@@ -120,7 +120,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private FrameLayoutFix mainWrap;
   private OverlayButtonWrap composeWrap;
 
-  @Override public void onUpdateChatFilter (TdApi.ChatFilterInfo[] updatedChatFilters) {
+  @Override public void onUpdateChatFilter (TdApi.ChatFolderInfo[] updatedChatFilters) {
     tdlib.ui().post(() -> {
       updateHeader();
       int startPosition = getCurrentPagerItemPosition() > updatedChatFilters.length - 1 ? getCurrentPagerItemPosition() : 0;
@@ -1073,7 +1073,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     ViewController<?> c;
     if (position != 0 && tdlib.chatFilters() != null && tdlib.chatFilters().length > 0) {
       ChatsController chats = new ChatsController(this.context, tdlib);
-      chats.setArguments(new ChatsController.Arguments(new TdApi.ChatListFilter(tdlib.chatFilters()[position - 1].id)).setIsBase(true));
+      chats.setArguments(new ChatsController.Arguments(new TdApi.ChatListFolder(tdlib.chatFilters()[position - 1].id)).setIsBase(true));
       c = chats;
     } else {
       c = newChatsController(this.menuSection, this.menuNeedArchive);
