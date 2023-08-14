@@ -318,6 +318,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       client.send(startup, (result) -> {
         if (result.getConstructor() == TdApi.Proxies.CONSTRUCTOR) {
           TdApi.Proxy[] proxies = ((TdApi.Proxies) result).proxies;
+          boolean foundEnabledProxy = false;
           for (TdApi.Proxy proxy : proxies) {
             TdApi.InternalLinkTypeProxy proxyDetails = new TdApi.InternalLinkTypeProxy(
               proxy.server,
@@ -328,7 +329,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             if (proxy.isEnabled) {
               tdlib.setEffectiveProxyId(proxyId);
               tdlib.setProxy(proxyId, proxyDetails);
+              foundEnabledProxy = true;
             }
+          }
+          if (!foundEnabledProxy) {
+            tdlib.setEffectiveProxyId(Settings.PROXY_ID_NONE);
           }
         } else {
           int proxyId = Settings.instance().getEffectiveProxyId();
@@ -6790,6 +6795,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     accessibleChatTimers.clear();
     chatOnlineMemberCount.clear();
     myProfilePhoto = null;
+    myEmojiStatusId = 0;
     pendingMessageTexts.clear();
     pendingMessageCaptions.clear();
     animatedDiceExplicit.clear();
@@ -8089,11 +8095,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (state == ConnectionState.CONNECTED || state == ConnectionState.WAITING_FOR_NETWORK) {
         final long connectionLossTime = this.connectionLossTime;
         this.connectionLossTime = 0;
+        final int proxyId = effectiveProxyId;
         cancelConnectionResolver();
-        if (state == ConnectionState.CONNECTED && connectionLossTime != 0) {
+        if (state == ConnectionState.CONNECTED && connectionLossTime != 0 && proxyId != Settings.PROXY_ID_UNKNOWN) {
           long connectedWithinMs = SystemClock.uptimeMillis() - connectionLossTime;
           Settings.instance().trackSuccessfulConnection(
-            effectiveProxyId,
+            proxyId,
             currentTimeMillis(),
             connectedWithinMs,
             false
@@ -9268,7 +9275,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  // Loading user data
+
+  @TdlibThread
+  void downloadMyUser (@Nullable TdApi.User user) {
+    TdApi.EmojiStatus emojiStatus = user != null && user.isPremium ? user.emojiStatus : null;
+    long newEmojiStatusId = emojiStatus != null ? emojiStatus.customEmojiId : 0;
+    TdlibEmojiManager.Entry emojiEntry = newEmojiStatusId != 0 ? emoji().find(newEmojiStatusId) : null;
+    TdApi.Sticker emojiStatusSticker = emojiEntry != null && !emojiEntry.isNotFound() ? emojiEntry.value : null;
+
+    account().storeUserInformation(user, emojiStatusSticker);
+    downloadMyProfilePhoto(user);
+    downloadMyUserEmojiStatus(user);
+  }
+
+  // Loading user data: profile photo
+
   private TdApi.ProfilePhoto myProfilePhoto;
+
+  @TdlibThread
+  private void downloadMyProfilePhoto (TdApi.User user) {
+    TdApi.ProfilePhoto newProfilePhoto = user != null ? user.profilePhoto : null;
+    if (newProfilePhoto == null && myProfilePhoto == null)
+      return;
+    if (newProfilePhoto != null && myProfilePhoto != null && (newProfilePhoto.id == myProfilePhoto.id && newProfilePhoto.small.id == myProfilePhoto.small.id && newProfilePhoto.big.id == myProfilePhoto.big.id))
+      return;
+    myProfilePhoto = newProfilePhoto;
+    if (newProfilePhoto != null) {
+      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.CLOUD_PRIORITY + 2, 0, 0, true), profilePhotoHandler(false));
+      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), profilePhotoHandler(true));
+    }
+  }
 
   private Client.ResultHandler profilePhotoHandler (boolean isBig) {
     return result -> {
@@ -9293,20 +9330,49 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     };
   }
 
-  @TdlibThread
-  void downloadMyUser (@Nullable TdApi.User user) {
-    account().storeUserInformation(user);
+  // Loading user data: emoji status
 
-    TdApi.ProfilePhoto newProfilePhoto = user != null ? user.profilePhoto : null;
-    if (newProfilePhoto == null && myProfilePhoto == null)
+  private long myEmojiStatusId;
+
+  @TdlibThread
+  private void downloadMyUserEmojiStatus (@Nullable TdApi.User user) {
+    TdApi.EmojiStatus emojiStatus = user != null && user.isPremium ? user.emojiStatus : null;
+    long newEmojiStatusId = emojiStatus != null ? emojiStatus.customEmojiId : 0;
+    if (newEmojiStatusId == myEmojiStatusId)
       return;
-    if (newProfilePhoto != null && myProfilePhoto != null && (newProfilePhoto.id == myProfilePhoto.id && newProfilePhoto.small.id == myProfilePhoto.small.id && newProfilePhoto.big.id == myProfilePhoto.big.id))
-      return;
-    myProfilePhoto = newProfilePhoto;
-    if (newProfilePhoto != null) {
-      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), profilePhotoHandler(false));
-      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), profilePhotoHandler(true));
+    myEmojiStatusId = newEmojiStatusId;
+    if (newEmojiStatusId != 0) {
+      emoji().findOrRequest(newEmojiStatusId, entry -> {
+        if (!entry.isNotFound() && newEmojiStatusId == myEmojiStatusId) {
+          account().storeUserEmojiStatusMetadata(newEmojiStatusId, entry.value);
+          client().send(new TdApi.DownloadFile(entry.value.sticker.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusHandler(entry, false));
+          if (entry.value.thumbnail != null) {
+            client().send(new TdApi.DownloadFile(entry.value.thumbnail.file.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), emojiStatusHandler(entry, true));
+          }
+        }
+      });
     }
+  }
+
+  private Client.ResultHandler emojiStatusHandler (@NonNull TdlibEmojiManager.Entry entry, boolean isThumbnail) {
+    return result -> {
+      switch (result.getConstructor()) {
+        case TdApi.File.CONSTRUCTOR: {
+          TdApi.File downloadedFile = (TdApi.File) result;
+          TdApi.File targetFile = isThumbnail ? entry.value.thumbnail.file : entry.value.sticker;
+          if (TD.isFileLoaded(downloadedFile) && myEmojiStatusId == entry.key && targetFile.id == downloadedFile.id) {
+            Td.copyTo(downloadedFile, targetFile);
+            account().storeUserEmojiStatusPath(entry.key, entry.value, isThumbnail, downloadedFile.local.path);
+            context.onUpdateEmojiStatus(accountId, isThumbnail);
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          Log.e("Failed to load emoji status, accountId:%d, isThumbnail:%b", accountId, isThumbnail);
+          break;
+        }
+      }
+    };
   }
 
   // Periodic sync
