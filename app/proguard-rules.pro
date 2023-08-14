@@ -59,23 +59,15 @@
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
+-dontwarn org.conscrypt.Conscrypt$Version
+-dontwarn org.conscrypt.Conscrypt
 
-# WebRTC
+-dontwarn org.bouncycastle.jsse.BCSSLParameters
+-dontwarn org.bouncycastle.jsse.BCSSLSocket
+-dontwarn org.bouncycastle.jsse.provider.BouncyCastleJsseProvider
 
-# Keep items annotated with @CalledByNative
--keep @org.webrtc.CalledByNative public class *
--keepclassmembers class * {
-    @org.webrtc.CalledByNative *;
-}
+-dontwarn org.openjsse.javax.net.ssl.SSLParameters
+-dontwarn org.openjsse.javax.net.ssl.SSLSocket
+-dontwarn org.openjsse.net.ssl.OpenJSSE
 
-# Keep items annotated with @CalledByNativeUnchecked
--keep @org.webrtc.CalledByNativeUnchecked public class *
--keepclassmembers class * {
-    @org.webrtc.CalledByNativeUnchecked *;
-}
-
--keep class org.webrtc.** { *; }
--keepclassmembers class org.webrtc.** { *; }
-
-# TODO remove once fixed in Android Gradle Plugin
--dontoptimize
+-dontwarn com.google.firebase.analytics.connector.AnalyticsConnector
