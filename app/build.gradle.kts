@@ -41,12 +41,15 @@ android {
 
   defaultConfig {
     val versions = extra["versions"] as Properties
-    val jniVersion = versions.getIntOrThrow("version.jni")
-    val tdlibVersion = versions.getIntOrThrow("version.tdlib")
-    val leveldbVersion = versions.getIntOrThrow("version.leveldb")
 
-    buildConfigInt("SO_VERSION", (jniVersion + tdlibVersion + leveldbVersion))
-    buildConfigInt("TDLIB_VERSION", tdlibVersion)
+    val ndkVersion = versions.getProperty("version.ndk")
+    val jniVersion = versions.getProperty("version.jni")
+    val leveldbVersion = versions.getProperty("version.leveldb")
+
+    buildConfigString("NDK_VERSION", ndkVersion)
+    buildConfigString("JNI_VERSION", jniVersion)
+    buildConfigString("LEVELDB_VERSION", leveldbVersion)
+
     buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
@@ -171,7 +174,7 @@ gradle.projectsEvaluated {
     "updateExceptions"
   )
   Abi.VARIANTS.forEach { (_, variant) ->
-    tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
+    tasks.getByName("pre${variant.flavor[0].uppercaseChar() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
       task.dependsOn("updateLanguages")
       if (!isExperimentalBuild) {
         task.dependsOn("validateApiTokens")
