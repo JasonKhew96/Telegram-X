@@ -38,8 +38,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -2479,6 +2479,19 @@ public class TdlibUi extends Handler {
 
   public void openPrivateProfile (final TdlibDelegate context, final long userId, final UrlOpenParameters openParameters) {
     openChatProfile(context, ChatId.fromUserId(userId), null, new TdApi.CreatePrivateChat(userId, false), openParameters);
+  }
+
+  public void openSenderProfile (final TdlibDelegate context, final TdApi.MessageSender senderId, final UrlOpenParameters openParameters) {
+    switch (senderId.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR:
+        openPrivateProfile(context, ((TdApi.MessageSenderUser) senderId).userId, openParameters);
+        break;
+      case TdApi.MessageSenderChat.CONSTRUCTOR:
+        openChatProfile(context, ((TdApi.MessageSenderChat) senderId).chatId, null, openParameters);
+        break;
+      default:
+        throw new UnsupportedOperationException(senderId.toString());
+    }
   }
 
   public void startSecretChat (final TdlibDelegate context, final long userId, final boolean allowExisting, final @Nullable ChatOpenParameters params) {
