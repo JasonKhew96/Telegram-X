@@ -1062,6 +1062,62 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       UI.copyText(U.getApkFingerprint("SHA1"), R.string.CopiedText);
     } else if (viewId == R.id.btn_secret_pushStats) {
       UI.copyText(Settings.instance().getPushMessageStats(), R.string.CopiedText);
+    } else if (viewId == R.id.btn_secret_tgcalls || viewId == R.id.btn_secret_tgcallsOptions) {
+      SettingsWrapBuilder builder = new SettingsWrapBuilder(viewId);
+      List<ListItem> items = new ArrayList<>();
+
+      if (viewId == R.id.btn_secret_tgcalls) {
+        String[] versions = VoIP.getAvailableVersions(false);
+        Arrays.sort(versions, (a, b) -> {
+          VoIP.Version aVersion = new VoIP.Version(a);
+          VoIP.Version bVersion = new VoIP.Version(b);
+          return bVersion.compareTo(aVersion);
+        });
+        for (String version : versions) {
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, version, !VoIP.isForceDisabled(version)).setStringValue(version));
+        }
+        builder.addHeaderItem("Disabling all tgcalls versions enables libtgvoip " + VoIPController.getVersion() + " without tgcalls wrapper.");
+      } else {
+        int index = 0;
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Acoustic Echo Cancellation", !VoIP.needDisableAcousticEchoCancellation()).setIntValue(index++));
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Noise Suppression", !VoIP.needDisableNoiseSuppressor()).setIntValue(index++));
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, viewId, 0, "Automatic Gain Control", !VoIP.needDisableAutomaticGainControl()).setIntValue(index++));
+      }
+
+      builder.setRawItems(items);
+      builder.setDisableToggles(true);
+      builder.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+        if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION && item.getId() == viewId) {
+          final boolean isSelect = settingsAdapter.toggleView(view);
+          item.setSelected(isSelect);
+        }
+      });
+      builder.setOnActionButtonClick((wrap, view, isCancel) -> {
+        if (isCancel) {
+          return false;
+        }
+
+        for (ListItem item : wrap.adapter.getItems()) {
+          if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION && item.getId() == viewId) {
+            boolean isEnabled = item.isSelected();
+            if (viewId == R.id.btn_secret_tgcalls) {
+              String version = item.getStringValue();
+              VoIP.setForceDisableVersion(version, !isEnabled);
+            } else if (viewId == R.id.btn_secret_tgcallsOptions) {
+              switch (item.getIntValue()) {
+                case 0: VoIP.setForceDisableAcousticEchoCancellation(!isEnabled); break;
+                case 1: VoIP.setForceDisableNoiseSuppressor(!isEnabled); break;
+                case 2: VoIP.setForceDisableAutomaticGainControl(!isEnabled); break;
+              }
+            }
+          }
+        }
+
+        return false;
+      });
+      builder.setSaveStr(R.string.Save);
+
+      showSettings(builder);
     } else if (viewId == R.id.btn_debugSwitchRtl) {
       context.addRemoveRtlSwitch();
     } else if (viewId == R.id.btn_secret_replacePhoneNumber) {

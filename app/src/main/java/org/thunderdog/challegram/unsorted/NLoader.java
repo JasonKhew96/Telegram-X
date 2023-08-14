@@ -29,8 +29,11 @@ import com.google.android.exoplayer2.ext.opus.OpusLibrary;
 import com.google.android.exoplayer2.ext.vp9.VpxLibrary;
 
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.voip.VoIPController;
+import org.webrtc.SoftwareVideoEncoderFactory;
+import org.webrtc.VideoCodecInfo;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -65,10 +68,11 @@ public class NLoader implements ReLinker.Logger {
       try {
         ReLinkerInstance reLinker = ReLinker.recursively().log(NLoader.instance());
         loadLibraryImpl(reLinker, "c++_shared", BuildConfig.NDK_VERSION);
-        loadLibraryImpl(reLinker, "crypto", BuildConfig.OPENSSL_VERSION);
-        loadLibraryImpl(reLinker, "ssl", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "cryptox", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "sslx", BuildConfig.OPENSSL_VERSION);
         loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
         loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
+        loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);
         loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
           OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
@@ -77,13 +81,15 @@ public class NLoader implements ReLinker.Logger {
           FfmpegLibrary.setLibraries();
           if (BuildConfig.DEBUG) {
             android.util.Log.v("tgx", String.format(Locale.US,
-              "leveldb %s, libopus %s, libvpx %s, ffmpeg %s, tgvoip %s",
+              "leveldb %s, libopus %s, libvpx %s, ffmpeg %s, tgvoip %s, tgcalls %s",
               LevelDB.getVersion(),
               OpusLibrary.getVersion(),
               VpxLibrary.getVersion(),
               FfmpegLibrary.getVersion(),
-              VoIPController.getVersion()
+              VoIPController.getVersion(),
+              TextUtils.join("+", N.getTgCallsVersions())
             ));
+            VideoCodecInfo[] softwareVideoCodecs = new SoftwareVideoEncoderFactory().getSupportedCodecs();
           }
         }
       } catch (Throwable t) {
